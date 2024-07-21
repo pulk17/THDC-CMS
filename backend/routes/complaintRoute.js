@@ -18,4 +18,5 @@ router.get('/admin/getNewComplaint',isAuthenticatedUser,authorizeRoles("admin"),
 router.get('/admin/getPendingComplaint',isAuthenticatedUser,authorizeRoles("admin"),getPendingComplaints)
 router.get('/admin/getWorkerList',isAuthenticatedUser,authorizeRoles("admin"),getAllWorkers)
 
-exports.router = router
+module.exports = router;
+

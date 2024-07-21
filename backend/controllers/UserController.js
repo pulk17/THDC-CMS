@@ -11,7 +11,7 @@ exports.registerEmployee = catchAsyncError(async(req,res,next)=>{
 
         const newUser = await User.findOne({"employee_id" : employee_id})
         if(newUser){
-            return next(new ErrorHandler("Email Already Registered !",401));
+            return next(new ErrorHandler("Employee Already Registered !",401));
         }
 
         const user = await User.create({

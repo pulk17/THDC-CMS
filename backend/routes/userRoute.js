@@ -8,4 +8,4 @@ router.post("/user/login",loginUserAsEmployee)
 router.post("/admin/login",loginUserAsAdmin)
 router.get("/logout",LogoutUser)
 
-exports.router = router
+module.exports = router;

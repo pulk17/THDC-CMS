@@ -12,6 +12,7 @@ import AdminNewComplaints from "./Components/AdminDashboard/AdminNewComplaints";
 import AdminPendingComplaints from "./Components/AdminDashboard/AdminPendingComplaints";
 import AdminCompleteComplaints from "./Components/AdminDashboard/AdminCompleteComplaints";
 import AdminLayout from "./Components/AdminDashboard/AdminLayout";
+import LoginAdmin from "./Components/Screen/Auth/LoginAdmin";
 
 
 function App() {
@@ -19,7 +20,8 @@ function App() {
 
       <Routes>
         <Route path="/authEmployee" element={<AuthMainScreen />} />
-        <Route path="/auth" element={<AuthScreen />} />
+        <Route path="/" element={<AuthScreen />} />
+        <Route path="/authAdmin" element = {<LoginAdmin />} />
 
         <Route path="/employee" element={<EmployeeLayout />}>
           <Route path="register-complaint" element={<RegisterComplaint />} />

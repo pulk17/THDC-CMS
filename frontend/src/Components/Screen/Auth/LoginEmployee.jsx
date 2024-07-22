@@ -3,6 +3,7 @@ import {Text , Button, FormControl, FormLabel, Input, InputGroup, InputRightElem
 import { Box, Alert, AlertIcon, AlertTitle, AlertDescription } from '@chakra-ui/react';
 import { useDispatch, useSelector } from 'react-redux';
 import { loginAsEmployee } from '../../../Redux/Actions/AuthAction';
+import {useNavigate} from 'react-router-dom'
 
 const LoginEmployee = () => {
     const [isAdmin , setIsAdmin] = useState(false);
@@ -18,15 +19,21 @@ const LoginEmployee = () => {
 
     // hooks call
     const dispatch = useDispatch();
+    const navigate = useNavigate()
 
     // login handle button
     const submitLoginUpForm = () => {
-        if(!isAdmin){}
         dispatch(loginAsEmployee(employee_id, employee_password));
     }
 
     // fetch data from store
     const { loading, user: loginUser, isLoggedIn, error } = useSelector((state) => state.loginUser);
+
+    useEffect(()=>{
+        if(isLoggedIn){
+            navigate('/employee')
+        }
+    },[isLoggedIn])
 
     // handle alert close
     const onClose = () => {

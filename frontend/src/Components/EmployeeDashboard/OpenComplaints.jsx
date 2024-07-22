@@ -1,45 +1,16 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { Box, Table, Thead, Tbody, Tr, Th, Td, TableContainer, Text, Tag, Button } from '@chakra-ui/react';
 import { FaTrash } from 'react-icons/fa';
+import { EmployeeContext } from '../context/EmployeeContext';
+import moment from 'moment';
 
-const complaints = [
-  {
-    complaintId: 'C123',
-    employeeId: 'E456',
-    assetType: 'THDC Desktop',
-    complaintText: 'The desktop is not turning on.',
-    mobileNo: '9876543210',
-    location: 'Tehri',
-    createdDate: '2024-07-21',
-    status: 'Open',
-  },
-  {
-    complaintId: 'C124',
-    employeeId: 'E457',
-    assetType: 'THDC UPS',
-    complaintText: 'UPS battery is faulty.',
-    mobileNo: '9123456789',
-    location: 'Koteshwar',
-    createdDate: '2024-07-20',
-    status: 'Open',
-  },
-  {
-    complaintId: 'C125',
-    employeeId: 'E458',
-    assetType: 'THDC Printer',
-    complaintText: 'Printer is out of ink.',
-    mobileNo: '9876543210',
-    location: 'Tehri',
-    createdDate: '2024-07-19',
-    status: 'Open',
-  },
-  // Add more sample data as needed
-];
 
 const OpenComplaints = () => {
+  const {allMyComplaints, setAllMyComplaints } = useContext(EmployeeContext);
+
   const getStatusColor = (status) => {
     switch (status) {
-      case 'Open':
+      case 'Opened':
         return 'green';
       case 'Closed':
         return 'red';
@@ -50,6 +21,11 @@ const OpenComplaints = () => {
     }
   };
 
+  const formatDate = (dateString) => {
+    return moment(dateString).format('MMMM D, YYYY h:mm A'); // Format as "July 22, 2024 7:19 AM"
+  };
+
+
   return (
     <Box
       p={5}
@@ -58,7 +34,7 @@ const OpenComplaints = () => {
       overflowX="auto"
       bg="gray.50"
     >
-      <Text fontSize="2xl" fontWeight="bold" mb={4}>Open Complaints</Text>
+      <Text fontSize="2xl" fontWeight="bold" mb={4}>Opened Complaints</Text>
       <Box overflowX="auto">
         <TableContainer
           bg="white"
@@ -76,29 +52,26 @@ const OpenComplaints = () => {
                 {/* <Th>Mobile No</Th> */}
                 <Th>Location</Th>
                 <Th>Created Date</Th>
+                <Th>Closed Date</Th>
                 <Th>Status</Th>
-                <Th>Actions</Th>
+                {/* <Th>Actions</Th> */}
               </Tr>
             </Thead>
             <Tbody>
-              {complaints.map((complaint) => (
-                <Tr key={complaint.complaintId}>
-                  <Td>{complaint.complaintId}</Td>
-                  {/* <Td>{complaint.employeeId}</Td> */}
-                  <Td>{complaint.assetType}</Td>
-                  <Td>{complaint.complaintText}</Td>
-                  {/* <Td>{complaint.mobileNo}</Td> */}
-                  <Td>{complaint.location}</Td>
-                  <Td>{complaint.createdDate}</Td>
-                  <Td>
-                    <Tag colorScheme={getStatusColor(complaint.status)}>{complaint.status}</Tag>
-                  </Td>
-                  <Td>
-                    <Button colorScheme="red" leftIcon={<FaTrash />} size="sm">
-                      Remove
-                    </Button>
-                  </Td>
-                </Tr>
+              {allMyComplaints && allMyComplaints.filter((com)=> com.status === 'Opened').map((complaint) => (
+                <Tr key={complaint.complaint_id}>
+                <Td>{complaint.complaint_id}</Td>
+                <Td>{complaint.complaint_asset}</Td>
+                <Td>{complaint.complain_details}</Td>
+                <Td>{complaint.employee_location}</Td>
+                <Td>{formatDate(complaint.created_date)}</Td>
+                <Td>{formatDate(complaint.closed_date)}</Td>
+                <Td>
+                  <Tag colorScheme={getStatusColor(complaint.status)}>
+                    {complaint.status}
+                  </Tag>
+                </Td>
+              </Tr>
               ))}
             </Tbody>
           </Table>

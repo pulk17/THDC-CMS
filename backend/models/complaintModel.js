@@ -11,6 +11,9 @@ const ComplaintSchema = new Schema({
         type: String,
         required: [true, "Please enter your Asset"]
     },
+    complaint_id: {
+        type: String,
+    },
     employee_phoneNo: {
         type: Number,
         required: [true, "Please enter your Phone Number"],

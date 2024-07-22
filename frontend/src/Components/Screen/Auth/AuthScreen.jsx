@@ -1,6 +1,7 @@
 import React from 'react'; 
 import { Container, Text, Box, Image, Button, Flex } from '@chakra-ui/react';
 import profileImage from '../../../assets/profile.png';
+import { Link } from 'react-router-dom';
 
 const AuthScreen = () => {
   return (
@@ -37,9 +38,11 @@ const AuthScreen = () => {
             w="50%"
             mb={4}
           />
+          <Link to='/authAdmin'>
           <Button colorScheme="red" textColor='white' size="lg">
             Admin Login
           </Button>
+          </Link>
         </Box>
         <Box
           p={6}
@@ -64,9 +67,11 @@ const AuthScreen = () => {
             w="50%"
             mb={4}
           />
+          <Link to ='/authEmployee'>
           <Button colorScheme="blue" size="lg">
             Student/Staff Login
           </Button>
+          </Link>
         </Box>
       </Flex>
     </Container>

@@ -1,10 +1,17 @@
 import { configureStore } from '@reduxjs/toolkit'
 import {thunk} from 'redux-thunk'
-import { loginEmployeeReducer, registerEmployeeReducer } from './Reducers/AuthReducers'
+import {loginAdminReducer, loginEmployeeReducer, registerEmployeeReducer } from './Reducers/AuthReducers'
+import { assignComplaintToWorkersReducer, getAllEmployeeComplaintReducer, getAllMyComplaintReducer, getAllWorkersListReducer, registerComplaintReducer } from './Reducers/ComplaintReducer'
 
 const rootReducer = {
    loginUser : loginEmployeeReducer,
-   registerUser : registerEmployeeReducer
+   loginAdmin: loginAdminReducer,
+   registerUser : registerEmployeeReducer,
+   registerComplaint : registerComplaintReducer,
+   allMyComplaints : getAllMyComplaintReducer,
+   allEmployeeComplaints : getAllEmployeeComplaintReducer,
+   allWorkers : getAllWorkersListReducer,
+   assignComplaint : assignComplaintToWorkersReducer
 }
 
 const preloadedState = {

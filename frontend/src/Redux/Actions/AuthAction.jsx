@@ -1,5 +1,6 @@
 import axios from 'axios'
-import { LOGIN_AS_EMPLOYEE_FAIL, LOGIN_AS_EMPLOYEE_REQUEST, LOGIN_AS_EMPLOYEE_SUCCESS, REGISTER_AS_EMPLOYEE_FAIL, REGISTER_AS_EMPLOYEE_REQUEST, REGISTER_AS_EMPLOYEE_SUCCESS } from '../ActionType'
+import { LOGIN_AS_ADMIN_FAIL, LOGIN_AS_ADMIN_REQUEST, LOGIN_AS_ADMIN_SUCCESS, LOGIN_AS_EMPLOYEE_FAIL, LOGIN_AS_EMPLOYEE_REQUEST, LOGIN_AS_EMPLOYEE_SUCCESS, REGISTER_AS_EMPLOYEE_FAIL, REGISTER_AS_EMPLOYEE_REQUEST, REGISTER_AS_EMPLOYEE_SUCCESS } from '../ActionType'
+import { getAllEmployeeComplaints, getAllMyComplaints, getAllWorkersList } from './ComplaintAction'
 
 
 //Login As A Employee:-
@@ -14,6 +15,7 @@ export const loginAsEmployee = (employee_id, employee_password) => async(dispatc
             type: LOGIN_AS_EMPLOYEE_SUCCESS,
             payload: data.user
         })
+        dispatch(getAllMyComplaints());
     }catch(error){
         dispatch({
             type: LOGIN_AS_EMPLOYEE_FAIL,
@@ -37,6 +39,29 @@ export const RegisterAsEmployee = (employee_id, employee_name,employee_designati
     }catch(error){
         dispatch({
             type: REGISTER_AS_EMPLOYEE_FAIL,
+            payload: error.response.data.message
+        })
+    }
+}
+
+
+//Login As A Admin:-
+export const loginAsAdmin = (employee_id, employee_password) => async(dispatch) =>{
+    try{
+        dispatch({
+            type: LOGIN_AS_ADMIN_REQUEST
+        })
+        const config = { headers: { "Content-type": "application/json" } }
+        const { data } = await axios.post("/api/v1/admin/login", { employee_id, employee_password }, config)
+        dispatch({
+            type: LOGIN_AS_ADMIN_SUCCESS,
+            payload: data.user
+        })
+        dispatch(getAllEmployeeComplaints())
+        dispatch(getAllWorkersList())
+    }catch(error){
+        dispatch({
+            type: LOGIN_AS_ADMIN_FAIL,
             payload: error.response.data.message
         })
     }

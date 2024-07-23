@@ -157,7 +157,7 @@ const AdminComplaintDetailModal = ({
             </Box>
             <Box
               p={4}
-              display={complaintDetail && complaintDetail.statua === 'Opened' ? 'block' : 'none'}
+              display={complaintDetail && complaintDetail.status === 'Opened' ? 'block' : 'none'}
               borderTopWidth="1px"
               borderColor="gray.200"
               textAlign="right"

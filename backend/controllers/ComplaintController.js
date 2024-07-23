@@ -127,3 +127,49 @@ exports.assignComplaintToWorkers = catchAsyncError(async (req, res, next) => {
     complaint,
   });
 });
+
+
+// find all arrived complaints of users:-
+exports.findArrivedComplaint = catchAsyncError(async (req, res, next) => {
+  
+  const complaints = await Complaints.find({"attended_by.id" : req.user.id}).populate({
+    path: "employee_id",
+    select: "employee_id employee_name", // Specify the fields you want to include
+  });
+;
+
+  if (!complaints) {
+    return next(new ErrorHandler("No complaint for you", 401));
+  }
+
+  res.status(200).json({
+    success: true,
+    complaints,
+  });
+});
+
+
+//change the status of work mark it as completed:-
+exports.changeStatusOfComplaint = catchAsyncError(async (req, res, next) => {
+
+  const {complaint_id , isCompleted} = req.body
+  
+  const complaint = await Complaints.findById(complaint_id);
+
+  if (!complaint) {
+    return next(new ErrorHandler("Wrong complaint id", 401));
+  }
+
+  if(isCompleted){
+     complaint.status = "Closed"
+     complaint.closed_date = Date.now()
+  }
+
+  await complaint.save()
+
+  res.status(200).json({
+    success: true,
+    message : "Complaint Closed Successfully",
+    complaint,
+  });
+});

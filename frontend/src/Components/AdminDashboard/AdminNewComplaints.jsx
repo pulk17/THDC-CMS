@@ -1,5 +1,5 @@
 import React, { useContext, useState } from 'react';
-import { Box, Table, Thead, Tbody, Tr, Th, Td, TableContainer, Text, Tag, Button } from '@chakra-ui/react';
+import { Box, Table, Thead, Heading,Tbody, Tr, Th, Td, TableContainer, Text, Tag, Button } from '@chakra-ui/react';
 import AdminComplaintDetailModal from './AdminUpdateDetailModal';
 import { AdminContext } from '../context/AdminContext';
 import moment from 'moment';
@@ -48,7 +48,7 @@ const AdminNewComplaints = () => {
       overflowX="auto"
       bg="gray.50"
     >
-      <Text fontSize="2xl" fontWeight="bold" mb={4}>All Complaints</Text>
+       <Heading  as="h1" textAlign="center" mb={14} color="teal.500">New Complaints</Heading>
       <Box overflowX="auto">
         <TableContainer
           bg="white"

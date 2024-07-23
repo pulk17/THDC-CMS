@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { Box, Table, Thead, Tbody, Tr, Th, Td, TableContainer, Text, Tag, Button } from '@chakra-ui/react';
+import { Box, Table,Heading, Thead, Tbody, Tr, Th, Td, TableContainer, Text, Tag, Button } from '@chakra-ui/react';
 import { FaTrash } from 'react-icons/fa';
 import { EmployeeContext } from '../context/EmployeeContext';
 import moment from 'moment';
@@ -35,7 +35,7 @@ const ClosedComplaints = () => {
       overflowX="auto"
       bg="gray.50"
     >
-      <Text fontSize="2xl" fontWeight="bold" mb={4}>Closed Complaints</Text>
+     <Heading  as="h1" textAlign="center" mb={14} color="teal.500">Closed Complaints</Heading>
       <Box overflowX="auto">
         <TableContainer
           bg="white"
@@ -46,7 +46,7 @@ const ClosedComplaints = () => {
           <Table variant="simple">
             <Thead bg="gray.100">
               <Tr>
-                <Th>Complaint Id</Th>
+                {/* <Th>Complaint Id</Th> */}
                 {/* <Th>Employee Id</Th> */}
                 <Th>Assets Type</Th>
                 <Th>Complaint Text</Th>
@@ -61,7 +61,7 @@ const ClosedComplaints = () => {
             <Tbody>
               {allMyComplaints && allMyComplaints.filter((com)=> com.status === 'Closed').map((complaint) => (
                 <Tr key={complaint.complaint_id}>
-                <Td>{complaint.complaint_id}</Td>
+                {/* <Td>{complaint.complaint_id}</Td> */}
                 <Td>{complaint.complaint_asset}</Td>
                 <Td>{complaint.complain_details}</Td>
                 <Td>{complaint.employee_location}</Td>

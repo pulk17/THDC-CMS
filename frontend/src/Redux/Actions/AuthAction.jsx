@@ -1,6 +1,6 @@
 import axios from 'axios'
 import { LOGIN_AS_ADMIN_FAIL, LOGIN_AS_ADMIN_REQUEST, LOGIN_AS_ADMIN_SUCCESS, LOGIN_AS_EMPLOYEE_FAIL, LOGIN_AS_EMPLOYEE_REQUEST, LOGIN_AS_EMPLOYEE_SUCCESS, REGISTER_AS_EMPLOYEE_FAIL, REGISTER_AS_EMPLOYEE_REQUEST, REGISTER_AS_EMPLOYEE_SUCCESS } from '../ActionType'
-import { getAllEmployeeComplaints, getAllMyComplaints, getAllWorkersList } from './ComplaintAction'
+import { findArrivedComplaints, getAllEmployeeComplaints, getAllMyComplaints, getAllWorkersList } from './ComplaintAction'
 
 
 //Login As A Employee:-
@@ -16,6 +16,7 @@ export const loginAsEmployee = (employee_id, employee_password) => async(dispatc
             payload: data.user
         })
         dispatch(getAllMyComplaints());
+        dispatch(findArrivedComplaints())
     }catch(error){
         dispatch({
             type: LOGIN_AS_EMPLOYEE_FAIL,

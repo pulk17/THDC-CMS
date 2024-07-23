@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { Box, Table, Thead, Tbody, Tr, Th, Td, TableContainer, Text, Tag, Button } from '@chakra-ui/react';
+import { Box, Table, Thead, Tbody, Heading,Tr, Th, Td, TableContainer, Text, Tag, Button } from '@chakra-ui/react';
 import { FaTrash } from 'react-icons/fa';
 import { EmployeeContext } from '../context/EmployeeContext';
 import moment from 'moment';
@@ -34,7 +34,7 @@ const OpenComplaints = () => {
       overflowX="auto"
       bg="gray.50"
     >
-      <Text fontSize="2xl" fontWeight="bold" mb={4}>Opened Complaints</Text>
+       <Heading  as="h1" textAlign="center" mb={14} color="teal.500">Opened Complaints</Heading>
       <Box overflowX="auto">
         <TableContainer
           bg="white"

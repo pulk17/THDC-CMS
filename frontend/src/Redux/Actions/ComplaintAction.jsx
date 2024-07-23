@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { ASSIGN_COMPLAINT_TO_WORKERS_FAIL, ASSIGN_COMPLAINT_TO_WORKERS_REQUEST, ASSIGN_COMPLAINT_TO_WORKERS_SUCCESS, GET_ALL_EMPLOYEE_COMPLAINT_FAIL, GET_ALL_EMPLOYEE_COMPLAINT_REQUEST, GET_ALL_EMPLOYEE_COMPLAINT_SUCCESS, GET_ALL_MY_COMPLAINT_FAIL, GET_ALL_MY_COMPLAINT_REQUEST, GET_ALL_MY_COMPLAINT_SUCCESS, GET_WORKERS_LIST_FAIL, GET_WORKERS_LIST_REQUEST, GET_WORKERS_LIST_SUCCESS, REGISTER_COMPLAINT_FAIL, REGISTER_COMPLAINT_REQUEST, REGISTER_COMPLAINT_SUCCESS } from '../ActionType'
+import { ASSIGN_COMPLAINT_TO_WORKERS_FAIL, ASSIGN_COMPLAINT_TO_WORKERS_REQUEST, ASSIGN_COMPLAINT_TO_WORKERS_SUCCESS, CHANGE_STATUS_OF_ARRIVED_COMPLAINT_FAIL, CHANGE_STATUS_OF_ARRIVED_COMPLAINT_REQUEST, CHANGE_STATUS_OF_ARRIVED_COMPLAINT_SUCCESS, GET_ALL_ARRIVED_COMPLAINT_FAIL, GET_ALL_ARRIVED_COMPLAINT_REQUEST, GET_ALL_ARRIVED_COMPLAINT_SUCCESS, GET_ALL_EMPLOYEE_COMPLAINT_FAIL, GET_ALL_EMPLOYEE_COMPLAINT_REQUEST, GET_ALL_EMPLOYEE_COMPLAINT_SUCCESS, GET_ALL_MY_COMPLAINT_FAIL, GET_ALL_MY_COMPLAINT_REQUEST, GET_ALL_MY_COMPLAINT_SUCCESS, GET_WORKERS_LIST_FAIL, GET_WORKERS_LIST_REQUEST, GET_WORKERS_LIST_SUCCESS, REGISTER_COMPLAINT_FAIL, REGISTER_COMPLAINT_REQUEST, REGISTER_COMPLAINT_SUCCESS } from '../ActionType'
 
 
 
@@ -102,6 +102,47 @@ export const assignComplaintsToWorkers = (id , emp_id) => async(dispatch) =>{
     }catch(error){
         dispatch({
             type: ASSIGN_COMPLAINT_TO_WORKERS_FAIL,
+            payload: error.response.data.message
+        })
+    }
+}
+
+// Change status of arrived complaint:-
+export const findArrivedComplaints = () => async(dispatch) =>{
+    try{
+        dispatch({
+            type: GET_ALL_ARRIVED_COMPLAINT_REQUEST
+        })
+        const { data } = await axios.get("/api/v1/getAllAssignedComplaint")
+        dispatch({
+            type: GET_ALL_ARRIVED_COMPLAINT_SUCCESS,
+            payload: data.complaints
+        })
+    }catch(error){
+        dispatch({
+            type: GET_ALL_ARRIVED_COMPLAINT_FAIL,
+            payload: error.response.data.message
+        })
+    }
+}
+
+//Change status of complaint:-
+export const changeStatusOfComplaint = (id , isCompleted) => async(dispatch) =>{
+    try{
+        dispatch({
+            type: CHANGE_STATUS_OF_ARRIVED_COMPLAINT_REQUEST
+        })
+        const config = { headers: { "Content-type": "application/json" } }
+        const { data } = await axios.put("/api/v1/changeStatusOfComplaint", {complaint_id:id , isCompleted:isCompleted}, config)
+        dispatch({
+            type: CHANGE_STATUS_OF_ARRIVED_COMPLAINT_SUCCESS,
+            payload: data.complaint
+        })
+        dispatch(findArrivedComplaints())
+        dispatch(getAllMyComplaints());
+    }catch(error){
+        dispatch({
+            type: CHANGE_STATUS_OF_ARRIVED_COMPLAINT_FAIL,
             payload: error.response.data.message
         })
     }

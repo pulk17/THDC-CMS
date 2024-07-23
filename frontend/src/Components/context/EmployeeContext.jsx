@@ -6,9 +6,11 @@ export const EmployeeContext = createContext(null);
 
 export const EmployeeComplaintsProvider = ({ children }) => {
     const [allMyComplaints, setAllMyComplaints] = useState([]);
+    const [allMyArrivedComplaints, setAllMyArrivedComplaints] = useState([]);
 
     // Extract necessary state from Redux
     const { isGetComplaint, allComplaints } = useSelector((state) => state.allMyComplaints);
+    const { isGetArrived, complaints } = useSelector((state) => state.findAllArrived);
 
     useEffect(() => {
         if (isGetComplaint) {
@@ -17,8 +19,15 @@ export const EmployeeComplaintsProvider = ({ children }) => {
         }
     }, [isGetComplaint, allComplaints]);
 
+    useEffect(() => {
+        if (isGetArrived) {
+            // Ensure allComplaints is an array
+            setAllMyArrivedComplaints(Array.isArray(complaints) ? complaints : []);
+        }
+    }, [isGetArrived, complaints]);
+
     return (
-        <EmployeeContext.Provider value={{ allMyComplaints, setAllMyComplaints }}>
+        <EmployeeContext.Provider value={{ allMyComplaints, setAllMyComplaints , allMyArrivedComplaints, setAllMyArrivedComplaints}}>
             {children}
         </EmployeeContext.Provider>
     );

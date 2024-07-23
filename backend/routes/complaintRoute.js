@@ -1,6 +1,6 @@
 const express = require('express')
 const { isAuthenticatedUser, authorizeRoles } = require('../middleware/auth')
-const { registerComplaint, getAllComplaintOfEmployee, getNewComplaints, getComplaintDetails, getPendingComplaints, getAllWorkers, getAllComplaints, assignComplaintToWorkers, findArrivedComplaint, changeStatusOfComplaint } = require('../controllers/ComplaintController')
+const { registerComplaint, getAllComplaintOfEmployee, getNewComplaints, getComplaintDetails, getPendingComplaints, getAllWorkers, getAllComplaints, assignComplaintToWorkers, findArrivedComplaint, changeStatusOfComplaint, filterComplaint } = require('../controllers/ComplaintController')
 
 const router = express.Router()
 
@@ -21,6 +21,7 @@ router.get('/admin/getPendingComplaint',isAuthenticatedUser,authorizeRoles("admi
 router.get('/admin/getWorkerList',isAuthenticatedUser,authorizeRoles("admin"),getAllWorkers)
 router.get('/admin/getAllComplaints',isAuthenticatedUser,authorizeRoles("admin"),getAllComplaints)
 router.put('/admin/assignComplaintToWorkers',isAuthenticatedUser,authorizeRoles("admin"),assignComplaintToWorkers)
+router.post('/admin/filterComplaints',isAuthenticatedUser,authorizeRoles("admin"),filterComplaint)
 
 module.exports = router;
 

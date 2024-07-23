@@ -24,7 +24,7 @@ const LoginEmployee = () => {
 
     useEffect(()=>{
         if(isLoggedInAdmin){
-            navigate('/admin/status/new-complaints')
+            navigate('/admin')
         }
     },[isLoggedInAdmin])
 

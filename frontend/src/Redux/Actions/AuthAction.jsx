@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { LOGIN_AS_ADMIN_FAIL, LOGIN_AS_ADMIN_REQUEST, LOGIN_AS_ADMIN_SUCCESS, LOGIN_AS_EMPLOYEE_FAIL, LOGIN_AS_EMPLOYEE_REQUEST, LOGIN_AS_EMPLOYEE_SUCCESS, REGISTER_AS_EMPLOYEE_FAIL, REGISTER_AS_EMPLOYEE_REQUEST, REGISTER_AS_EMPLOYEE_SUCCESS } from '../ActionType'
+import { LOGIN_AS_ADMIN_FAIL, LOGIN_AS_ADMIN_REQUEST, LOGIN_AS_ADMIN_SUCCESS, LOGIN_AS_EMPLOYEE_FAIL, LOGIN_AS_EMPLOYEE_REQUEST, LOGIN_AS_EMPLOYEE_SUCCESS, LOGOUT_USER_FAIL, LOGOUT_USER_REQUEST, LOGOUT_USER_SUCCESS, REGISTER_AS_EMPLOYEE_FAIL, REGISTER_AS_EMPLOYEE_REQUEST, REGISTER_AS_EMPLOYEE_SUCCESS } from '../ActionType'
 import { findArrivedComplaints, getAllEmployeeComplaints, getAllMyComplaints, getAllWorkersList } from './ComplaintAction'
 
 
@@ -68,6 +68,27 @@ export const loginAsAdmin = (employee_id, employee_password) => async(dispatch) 
     }
 }
 
+
+
+//Logout User:-
+export const logoutUser = () => async(dispatch) =>{
+    console.log("inside logout")
+    try{
+        dispatch({
+            type: LOGOUT_USER_REQUEST
+        })
+        const { data } = await axios.get("/api/v1//logout")
+        dispatch({
+            type: LOGOUT_USER_SUCCESS,
+            payload: data.message
+        })
+    }catch(error){
+        dispatch({
+            type: LOGOUT_USER_FAIL,
+            payload: error.response.data.message
+        })
+    }
+}
 
 
 

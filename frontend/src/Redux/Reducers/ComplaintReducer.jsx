@@ -1,4 +1,4 @@
-import { ASSIGN_COMPLAINT_TO_WORKERS_FAIL, ASSIGN_COMPLAINT_TO_WORKERS_REQUEST, ASSIGN_COMPLAINT_TO_WORKERS_RESET, ASSIGN_COMPLAINT_TO_WORKERS_SUCCESS, CHANGE_STATUS_OF_ARRIVED_COMPLAINT_FAIL, CHANGE_STATUS_OF_ARRIVED_COMPLAINT_REQUEST, CHANGE_STATUS_OF_ARRIVED_COMPLAINT_RESET, CHANGE_STATUS_OF_ARRIVED_COMPLAINT_SUCCESS, GET_ALL_ARRIVED_COMPLAINT_FAIL, GET_ALL_ARRIVED_COMPLAINT_REQUEST, GET_ALL_ARRIVED_COMPLAINT_RESET, GET_ALL_ARRIVED_COMPLAINT_SUCCESS, GET_ALL_EMPLOYEE_COMPLAINT_FAIL, GET_ALL_EMPLOYEE_COMPLAINT_REQUEST, GET_ALL_EMPLOYEE_COMPLAINT_SUCCESS, GET_ALL_MY_COMPLAINT_FAIL, GET_ALL_MY_COMPLAINT_REQUEST, GET_ALL_MY_COMPLAINT_SUCCESS, GET_WORKERS_LIST_FAIL, GET_WORKERS_LIST_REQUEST, GET_WORKERS_LIST_SUCCESS, REGISTER_COMPLAINT_FAIL, REGISTER_COMPLAINT_REQUEST, REGISTER_COMPLAINT_RESET, REGISTER_COMPLAINT_SUCCESS } from "../ActionType"
+import { ASSIGN_COMPLAINT_TO_WORKERS_FAIL, ASSIGN_COMPLAINT_TO_WORKERS_REQUEST, ASSIGN_COMPLAINT_TO_WORKERS_RESET, ASSIGN_COMPLAINT_TO_WORKERS_SUCCESS, CHANGE_STATUS_OF_ARRIVED_COMPLAINT_FAIL, CHANGE_STATUS_OF_ARRIVED_COMPLAINT_REQUEST, CHANGE_STATUS_OF_ARRIVED_COMPLAINT_RESET, CHANGE_STATUS_OF_ARRIVED_COMPLAINT_SUCCESS, FILTER_COMPLAINT_FAIL, FILTER_COMPLAINT_REQUEST, FILTER_COMPLAINT_RESET, FILTER_COMPLAINT_SUCCESS, GET_ALL_ARRIVED_COMPLAINT_FAIL, GET_ALL_ARRIVED_COMPLAINT_REQUEST, GET_ALL_ARRIVED_COMPLAINT_RESET, GET_ALL_ARRIVED_COMPLAINT_SUCCESS, GET_ALL_EMPLOYEE_COMPLAINT_FAIL, GET_ALL_EMPLOYEE_COMPLAINT_REQUEST, GET_ALL_EMPLOYEE_COMPLAINT_SUCCESS, GET_ALL_MY_COMPLAINT_FAIL, GET_ALL_MY_COMPLAINT_REQUEST, GET_ALL_MY_COMPLAINT_SUCCESS, GET_WORKERS_LIST_FAIL, GET_WORKERS_LIST_REQUEST, GET_WORKERS_LIST_SUCCESS, REGISTER_COMPLAINT_FAIL, REGISTER_COMPLAINT_REQUEST, REGISTER_COMPLAINT_RESET, REGISTER_COMPLAINT_SUCCESS } from "../ActionType"
 
 
 
@@ -282,6 +282,49 @@ export const changeStatusComplaintReducer = (state={
                 return {
                     isStatusChanged: false,
                     complaint: {},
+                    loading : false
+                }   
+        default:
+            return { ...state }
+    }
+}
+
+
+//Filter Complaint ---- 
+export const filterComplaintReducer = (state={
+    loading: false,
+    complaints: [],
+    isFiltered : false,
+    success: false,
+}, action) => {
+    const { type, payload } = action
+    switch(type){
+        case FILTER_COMPLAINT_REQUEST:
+            return {
+                ...state,
+                loading: true,
+                error:[]
+            }
+        case FILTER_COMPLAINT_SUCCESS:
+            return {
+                ...state,
+                loading: false,
+                complaints : payload,
+                isFiltered : true,
+                success: true
+            }
+        case FILTER_COMPLAINT_FAIL:
+            return {
+                ...state,
+                isFiltered : false,
+                loading: false,
+                error: payload,
+                complaints: []
+            }
+            case FILTER_COMPLAINT_RESET:
+                return {
+                    isFiltered: false,
+                    complaints: [],
                     loading : false
                 }   
         default:

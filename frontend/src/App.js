@@ -13,6 +13,9 @@ import AdminPendingComplaints from "./Components/AdminDashboard/AdminPendingComp
 import AdminCompleteComplaints from "./Components/AdminDashboard/AdminCompleteComplaints";
 import AdminLayout from "./Components/AdminDashboard/AdminLayout";
 import LoginAdmin from "./Components/Screen/Auth/LoginAdmin";
+import AdminStats from "./Components/AdminDashboard/AdminStats";
+import FilterComplaint from "./Components/AdminDashboard/FilterComplaint";
+import EmployeeStats from "./Components/EmployeeDashboard/EmployeeStats";
 
 
 function App() {
@@ -24,6 +27,7 @@ function App() {
         <Route path="/authAdmin" element = {<LoginAdmin />} />
 
         <Route path="/employee" element={<EmployeeLayout />}>
+        <Route path="" element={<EmployeeStats />} />
           <Route path="register-complaint" element={<RegisterComplaint />} />
           <Route path="status/all-complaints" element={<AllComplaints />} />
           <Route path="status/open-complaints" element={<OpenComplaints />} />
@@ -32,6 +36,8 @@ function App() {
         </Route>
         
         <Route path="/admin" element={<AdminLayout />}>
+          <Route path="" element={<AdminStats />} />
+          <Route path="filterComplaints" element={<FilterComplaint />} />
           <Route path="register-complaint" element={<AdminRegisterComplaint />} />
           <Route path="status/new-complaints" element={<AdminNewComplaints />} />
           <Route path="status/open-complaints" element={<AdminPendingComplaints />} />

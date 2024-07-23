@@ -5,6 +5,7 @@ const mongoose = require("mongoose");
 const ErrorHandler = require("../utils/errorhandler.js");
 const sendToken = require("../utils/jwtToken.js");
 
+
 // register a complaint:-
 exports.registerComplaint = catchAsyncError(async (req, res, next) => {
   const allComplaints = await Complaints.find();
@@ -136,7 +137,6 @@ exports.findArrivedComplaint = catchAsyncError(async (req, res, next) => {
     path: "employee_id",
     select: "employee_id employee_name", // Specify the fields you want to include
   });
-;
 
   if (!complaints) {
     return next(new ErrorHandler("No complaint for you", 401));
@@ -154,7 +154,10 @@ exports.changeStatusOfComplaint = catchAsyncError(async (req, res, next) => {
 
   const {complaint_id , isCompleted} = req.body
   
-  const complaint = await Complaints.findById(complaint_id);
+  const complaint = await Complaints.findById(complaint_id).populate({
+    path: "employee_id",
+    select: "employee_id employee_name", // Specify the fields you want to include
+  });;
 
   if (!complaint) {
     return next(new ErrorHandler("Wrong complaint id", 401));
@@ -171,5 +174,52 @@ exports.changeStatusOfComplaint = catchAsyncError(async (req, res, next) => {
     success: true,
     message : "Complaint Closed Successfully",
     complaint,
+  });
+});
+
+
+/// Function to convert DD/MM/YY to Date object
+const parseDate = (dateStr) => {
+  const [day, month, year] = dateStr.split('/').map(Number);
+  const fullYear = year >= 100 ? year : 2000 + year; // Handle 'YY' format
+  return new Date(fullYear, month - 1, day); // Months are zero-indexed
+};
+
+exports.filterComplaint = catchAsyncError(async (req, res, next) => {
+  const { startDate, endDate, status } = req.body;
+
+  // Ensure startDate and endDate are provided
+  if (!startDate || !endDate) {
+    return next(new ErrorHandler("Start date and end date are required", 400));
+  }
+
+  // Convert to Date objects
+  const start = parseDate(startDate);
+  const end = parseDate(endDate);
+
+  // Ensure start date is before end date
+  if (start > end) {
+    return next(new ErrorHandler("Start date must be before end date", 400));
+  }
+
+  // Query complaints within the date range and filter by status if provided
+  let query = {
+    created_date: { $gte: start, $lte: end }
+  };
+
+  if (status) {
+    query.status = status;
+  }
+
+  const complaints = await Complaints.find(query);
+
+  if (!complaints.length) {
+    return next(new ErrorHandler("No complaints found for the specified date range", 404));
+  }
+
+  res.status(200).json({
+    success: true,
+    message: "Complaints fetched successfully",
+    complaints
   });
 });

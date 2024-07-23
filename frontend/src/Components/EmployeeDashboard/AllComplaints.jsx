@@ -50,7 +50,7 @@ const AllComplaints = () => {
                 <Th>Location</Th>
                 <Th>Created Date</Th>
                 <Th>Status</Th>
-                <Th>Actions</Th>
+
               </Tr>
             </Thead>
             <Tbody>
@@ -65,11 +65,6 @@ const AllComplaints = () => {
                     <Tag colorScheme={getStatusColor(complaint.status)}>
                       {complaint.status}
                     </Tag>
-                  </Td>
-                  <Td>
-                    <Button colorScheme="red" leftIcon={<FaTrash />} size="sm">
-                      Remove
-                    </Button>
                   </Td>
                 </Tr>
               ))}

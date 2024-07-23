@@ -31,7 +31,7 @@ const LoginEmployee = () => {
 
     useEffect(()=>{
         if(isLoggedIn){
-            navigate('/employee/register-complaint')
+            navigate('/employee')
         }
     },[isLoggedIn])
 

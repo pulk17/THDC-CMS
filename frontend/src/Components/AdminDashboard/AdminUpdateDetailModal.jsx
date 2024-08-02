@@ -122,6 +122,12 @@ const AdminComplaintDetailModal = ({
               </Text>
             </Box>
             <Box mb={4}>
+              <Text fontWeight="bold">Employee Department:</Text>
+              <Text mt={1} bg="white" p={2} borderRadius="md" borderWidth="1px">
+                {complaintDetail.employee_id.employee_department}
+              </Text>
+            </Box>
+            <Box mb={4}>
               <Text fontWeight="bold">Location:</Text>
               <Text mt={1} bg="white" p={2} borderRadius="md" borderWidth="1px">
                 {complaintDetail.employee_location}

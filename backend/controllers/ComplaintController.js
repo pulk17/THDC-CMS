@@ -89,7 +89,7 @@ exports.getAllWorkers = catchAsyncError(async (req, res, next) => {
 exports.getAllComplaints = catchAsyncError(async (req, res, next) => {
   const allComplaints = await Complaints.find().populate({
     path: "employee_id",
-    select: "employee_id employee_name", // Specify the fields you want to include
+    select: "employee_id employee_name employee_department", // Specify the fields you want to include
   });
 
   res.status(200).json({

@@ -67,6 +67,7 @@ const ClosedComplaints = () => {
                 <Td>{complaint.employee_location}</Td>
                 <Td>{formatDate(complaint.created_date)}</Td>
                 <Td>{formatDate(complaint.closed_date)}</Td>
+                <Td>{complaint.feedback}</Td>
                 <Td>
                   <Tag colorScheme={getStatusColor(complaint.status)}>
                     {complaint.status}

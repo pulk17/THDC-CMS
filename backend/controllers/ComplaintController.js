@@ -152,12 +152,12 @@ exports.findArrivedComplaint = catchAsyncError(async (req, res, next) => {
 //change the status of work mark it as completed:-
 exports.changeStatusOfComplaint = catchAsyncError(async (req, res, next) => {
 
-  const {complaint_id , isCompleted} = req.body
+  const {complaint_id , isCompleted , isFeedback} = req.body
   
   const complaint = await Complaints.findById(complaint_id).populate({
     path: "employee_id",
     select: "employee_id employee_name", // Specify the fields you want to include
-  });;
+  });
 
   if (!complaint) {
     return next(new ErrorHandler("Wrong complaint id", 401));
@@ -165,6 +165,7 @@ exports.changeStatusOfComplaint = catchAsyncError(async (req, res, next) => {
 
   if(isCompleted){
      complaint.status = "Closed"
+     complaint.feedback = isFeedback
      complaint.closed_date = Date.now()
   }
 

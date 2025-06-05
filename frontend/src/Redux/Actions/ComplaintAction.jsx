@@ -127,13 +127,13 @@ export const findArrivedComplaints = () => async(dispatch) =>{
 }
 
 //Change status of complaint:-
-export const changeStatusOfComplaint = (id , isCompleted) => async(dispatch) =>{
+export const changeStatusOfComplaint = (id , isCompleted , isFeedback) => async(dispatch) =>{
     try{
         dispatch({
             type: CHANGE_STATUS_OF_ARRIVED_COMPLAINT_REQUEST
         })
         const config = { headers: { "Content-type": "application/json" } }
-        const { data } = await axios.put("/api/v1/changeStatusOfComplaint", {complaint_id:id , isCompleted:isCompleted}, config)
+        const { data } = await axios.put("/api/v1/changeStatusOfComplaint", {complaint_id:id , isCompleted:isCompleted , isFeedback:isFeedback}, config)
         dispatch({
             type: CHANGE_STATUS_OF_ARRIVED_COMPLAINT_SUCCESS,
             payload: data.complaint

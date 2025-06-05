@@ -97,9 +97,11 @@ const AdminRegisterComplaint = () => {
             <FormLabel>Mobile Number</FormLabel>
             <Input
               value={employee_phoneNo}
-              onChange={(e) => setEmployee_phoneNo(e.target.value)}
+              onChange={(e) => setEmployee_phoneNo(e.target.value.replace(/\D/g, ''))} //Allow only 10 digits
               type="tel"
               placeholder="Enter your mobile number"
+              maxLength="10"
+              minLength="10"
             />
           </FormControl>
 

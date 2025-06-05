@@ -52,12 +52,12 @@ const userSchema = new Schema({
 
 
 //for converting password
-userSchema.pre("save",async function(next){
-    if(!this.isModified('employee_password')){
-        next();
-    }
-    this.employee_password = await bcrypt.hash(this.employee_password , 10);
-})
+//userSchema.pre("save",async function(next){
+//    if(!this.isModified('employee_password')){
+//        next();
+//    }
+//    this.employee_password = await bcrypt.hash(this.employee_password , 10);
+//})
 
 //JWT TOKEN:-
 const JWT_SECRET = "KJGFSDJKGJFDLKGJHFOIAHJSFKAJHKAJ";
@@ -70,9 +70,14 @@ userSchema.methods.getJWTToken = function(){
 }
 
 //compare password
-userSchema.methods.comparePassword = async function (enteredPassword, next) {
-    return await bcrypt.compare(enteredPassword, this.employee_password);
-  };
+//userSchema.methods.comparePassword = async function (enteredPassword, next) {
+//    return await bcrypt.compare(enteredPassword, this.employee_password);
+//  };
+
+// Compare password without hashing
+userSchema.methods.comparePassword = async function(enteredPassword) {
+    return enteredPassword === this.employee_password; // Direct comparison
+};
 
 module.exports = mongoose.model("User" , userSchema) 
 

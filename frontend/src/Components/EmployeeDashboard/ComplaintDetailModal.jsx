@@ -11,7 +11,8 @@ import {
   useToast,
   RadioGroup,
   Radio,
-  Button
+  Button,
+  Input
 } from '@chakra-ui/react';
 import moment from 'moment';
 import { changeStatusOfComplaint } from '../../Redux/Actions/ComplaintAction';
@@ -21,17 +22,28 @@ import { CHANGE_STATUS_OF_ARRIVED_COMPLAINT_RESET } from '../../Redux/ActionType
 
 const ComplaintDetailModal = ({ isOpen, onClose, complaint }) => {
   const [isCompleted, setIsCompleted] = useState("false");
+  const [feedback, setFeedback] = useState("");
   const dispatch = useDispatch();
   const toast = useToast();
 
   const formatDate = (dateString) => {
     return moment(dateString).format('MMMM D, YYYY h:mm A'); // Format as "July 22, 2024 7:19 AM"
   };
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   const handleChangeStatus = () => {
-    if (isCompleted === "true") {
-      dispatch(changeStatusOfComplaint(complaint._id, true));
+    if (isCompleted === "true" && feedback.trim() !== "") {
+      dispatch(changeStatusOfComplaint(complaint._id, true, feedback));
+    }
+    else if (feedback.trim() === "") {
+      toast({
+        title: 'Feedback is required',
+        description: 'Please provide feedback before changing the status',
+        status: 'error',
+        position: 'top-right',
+        duration: 5000,
+        isClosable: true,
+      });
     }
   };
 
@@ -127,6 +139,10 @@ const ComplaintDetailModal = ({ isOpen, onClose, complaint }) => {
                   <Radio value="false" colorScheme="teal">No</Radio>
                 </Box>
               </RadioGroup>
+            </Box>
+            <Box mb={4}>
+               <Text fontWeight="bold">Enter the Feedback :</Text>
+               <Input placeholder="Feedback" value={feedback} onChange={(e) => setFeedback(e.target.value)} bg="white" p={2} borderRadius="md" borderWidth="1px" />
             </Box>
             <Box p={4} borderTopWidth="1px" borderColor="gray.200" textAlign="right">
               <Button

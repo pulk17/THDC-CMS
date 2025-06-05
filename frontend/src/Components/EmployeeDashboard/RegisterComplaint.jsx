@@ -99,9 +99,11 @@ const RegisterComplaint = () => {
             <FormLabel>Mobile Number</FormLabel>
             <Input
               value={employee_phoneNo}
-              onChange={(e) => setEmployee_phoneNo(e.target.value)}
+              onChange={(e) => setEmployee_phoneNo(e.target.value.replace(/\D/g, ''))} //Allows only digits
               type="tel"
               placeholder="Enter your mobile number"
+              maxLength="10"
+              minLength="10"
             />
           </FormControl>
 

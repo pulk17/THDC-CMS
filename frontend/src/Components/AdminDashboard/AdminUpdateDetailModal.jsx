@@ -10,11 +10,8 @@ import {
   Text,
   SimpleGrid,
   useToast,
-  RadioGroup,
-  Radio,
+  Select,
   Button,
-  VStack,
-  HStack,
 } from "@chakra-ui/react";
 import moment from "moment";
 import { AdminContext } from "../context/AdminContext";
@@ -148,19 +145,28 @@ const AdminComplaintDetailModal = ({
             <Box mb={6}>
               <Text fontWeight="bold">Assign To:</Text>
               {
-                complaintDetail && complaintDetail.status === 'Opened' ? <RadioGroup onChange={setEmpId} mt={2}>
-                <SimpleGrid columns={{ base: 1, sm: 2, md: 3 }} spacing={4}>
-                  {workers && workers.map((worker) => (
-                    <Radio key={worker._id} value={worker._id} colorScheme="teal">
-                      {worker.employee_name}
-                    </Radio>
-                  ))}
-                </SimpleGrid>
-              </RadioGroup> : <Text mt={1} bg="white" p={2} borderRadius="md" borderWidth="1px">
-                {complaintDetail.attended_by.name}
-              </Text>
+                complaintDetail && complaintDetail.status === 'Opened' ? (
+                  <Select placeholder="Select a worker" onChange={(e) => setEmpId(e.target.value)} mt={2}>
+                    {workers && workers.map((worker) => (
+                      <option key={worker._id} value={worker._id}>
+                        {worker.employee_name}
+                      </option>
+                    ))}
+                  </Select>
+                ) : (
+                  <Text mt={1} bg="white" p={2} borderRadius="md" borderWidth="1px">
+                    {complaintDetail.attended_by.name}
+                  </Text>
+                )
               }
             </Box>
+            {complaintDetail.feedback != "" && <Box mb={4}>
+              <Text fontWeight="bold">Feedback</Text>
+              <Text mt={1} bg="white" p={2} borderRadius="md" borderWidth="1px">
+                {complaintDetail.feedback}
+              </Text>
+            </Box>
+            }
             <Box
               p={4}
               display={complaintDetail && complaintDetail.status === 'Opened' ? 'block' : 'none'}
@@ -173,7 +179,7 @@ const AdminComplaintDetailModal = ({
                 isLoading={isAssignedLoading}
                 size="lg"
                 width="full"
-               onClick={handleAssign}
+                onClick={handleAssign}
               >
                 Assign
               </Button>

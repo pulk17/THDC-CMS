@@ -33,6 +33,10 @@ const ComplaintSchema = new Schema({
         type: Date,
         default: Date.now,
     },
+    feedback: {
+        type: String,
+        default: "",
+    },
     status: {
         type: String,
         default: "Opened"

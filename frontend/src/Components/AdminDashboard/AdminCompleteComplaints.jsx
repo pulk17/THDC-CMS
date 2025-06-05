@@ -48,7 +48,7 @@ const AdminCompleteComplaints = () => {
       overflowX="auto"
       bg="gray.50"
     >
-       <Heading  as="h1" textAlign="center" mb={14} color="teal.500">New Complaints</Heading>
+       <Heading  as="h1" textAlign="center" mb={14} color="teal.500">Closed Complaints</Heading>
       <Box overflowX="auto">
         <TableContainer
           bg="white"

@@ -69,7 +69,7 @@ const AuthScreen = () => {
           />
           <Link to ='/authEmployee'>
           <Button colorScheme="blue" size="lg">
-            Student/Staff Login
+            Employee Login
           </Button>
           </Link>
         </Box>

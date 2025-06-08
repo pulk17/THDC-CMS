@@ -34,11 +34,15 @@ api.interceptors.request.use(
     // Simplify request logging
     console.log(`[API] ${config.method?.toUpperCase()} ${config.url}`);
     
-    // Check for duplicate api/v1 in URL
-    if (config.url && config.url.includes('/api/v1/api/v1/')) {
-      console.warn('[API Warning] Detected duplicate /api/v1/ in URL path. This may cause 404 errors.');
-      // Fix the URL by removing the duplicate
-      config.url = config.url.replace('/api/v1/api/v1/', '/api/v1/');
+    // Check for duplicate api/v1 in URL and fix it
+    if (config.url) {
+      // This regex will match any duplicate instances of /api/v1 in the URL
+      const duplicatePathRegex = /\/api\/v1(\/api\/v1)+/g;
+      if (duplicatePathRegex.test(config.url)) {
+        console.warn('[API Warning] Detected duplicate /api/v1/ in URL path. Fixing URL.');
+        // Replace all duplicate occurrences with a single /api/v1
+        config.url = config.url.replace(duplicatePathRegex, '/api/v1');
+      }
     }
     
     return config;

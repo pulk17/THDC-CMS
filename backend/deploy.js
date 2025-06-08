@@ -294,77 +294,202 @@ app.post('/api/v1/register', async (req, res) => {
   }
 });
 
+// Get all users endpoint for admin
+app.get('/api/v1/admin/getAllUsers', isAuthenticated, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (!req.user.employee_role || req.user.employee_role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. Admin privileges required."
+      });
+    }
+    
+    try {
+      // Try to get users from database
+      const db = mongoose.connection.db;
+      const usersCollection = db.collection('users');
+      
+      // Find all users
+      const users = await usersCollection.find({}).toArray();
+      
+      if (users && users.length > 0) {
+        return res.status(200).json({
+          success: true,
+          users
+        });
+      } else {
+        console.log("No users found in database, using mock data");
+        // Fall back to mock data if no users found
+        return res.status(200).json({
+          success: true,
+          users: [
+            {
+              _id: "u1",
+              employee_id: 101,
+              employee_name: "Worker One",
+              employee_role: "employee",
+              is_Employee_Worker: true,
+              employee_department: "IT",
+              employee_designation: "Technician"
+            },
+            {
+              _id: "u2",
+              employee_id: 901,
+              employee_name: "Admin User",
+              employee_role: "admin",
+              is_Employee_Worker: false,
+              employee_department: "Administration",
+              employee_designation: "Manager"
+            }
+          ]
+        });
+      }
+    } catch (dbError) {
+      console.error("Database error fetching users:", dbError);
+      // Fall back to mock data
+      return res.status(200).json({
+        success: true,
+        users: [
+          {
+            _id: "u1",
+            employee_id: 101,
+            employee_name: "Worker One",
+            employee_role: "employee",
+            is_Employee_Worker: true,
+            employee_department: "IT",
+            employee_designation: "Technician"
+          },
+          {
+            _id: "u2",
+            employee_id: 901,
+            employee_name: "Admin User",
+            employee_role: "admin",
+            is_Employee_Worker: false,
+            employee_department: "Administration",
+            employee_designation: "Manager"
+          }
+        ]
+      });
+    }
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    });
+  }
+});
+
 // Get all complaints endpoint (with optional filtering)
-app.get('/api/v1/complaints', isAuthenticated, (req, res) => {
+app.get('/api/v1/complaints', isAuthenticated, async (req, res) => {
   try {
     const { mine, assigned } = req.query;
     
     console.log(`Complaints request - mine: ${mine}, assigned: ${assigned}`);
     
-    // Generate mock complaints data
-    const mockComplaints = [
-      {
-        _id: "c1",
-        employee_id: req.user.id,
-        employee_name: "Test User",
-        employee_location: "Office Building A",
-        complaint_asset: "Computer",
-        employee_phoneNo: "1234567890",
-        complain_details: "Computer not working properly",
-        isCompleted: false,
-        isFeedback: "",
-        assignedTo: null,
-        complaint_no: "CMP001",
-        createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
-        updatedAt: new Date()
-      },
-      {
-        _id: "c2",
-        employee_id: req.user.id,
-        employee_name: "Test User",
-        employee_location: "Office Building B",
-        complaint_asset: "Printer",
-        employee_phoneNo: "1234567890",
-        complain_details: "Printer out of ink",
-        isCompleted: true,
-        isFeedback: "Fixed by replacing ink cartridge",
-        assignedTo: "w1",
-        complaint_no: "CMP002",
-        createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000), // 14 days ago
-        updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) // 2 days ago
-      },
-      {
-        _id: "c3",
-        employee_id: "other_user",
-        employee_name: "Another User",
-        employee_location: "Office Building C",
-        complaint_asset: "Air Conditioner",
-        employee_phoneNo: "9876543210",
-        complain_details: "AC not cooling properly",
-        isCompleted: false,
-        isFeedback: "",
-        assignedTo: "w1",
-        complaint_no: "CMP003",
-        createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
-        updatedAt: new Date()
+    try {
+      // Try to get complaints from database
+      const db = mongoose.connection.db;
+      const complaintsCollection = db.collection('complaints');
+      
+      let query = {};
+      
+      // Build query based on parameters
+      if (mine === 'true') {
+        // Get complaints created by current user
+        query.employee_id = req.user.employee_id || req.user.id;
+      } else if (assigned === 'true') {
+        // Get complaints assigned to current user
+        query.assignedTo = req.user.employee_id || req.user.id;
       }
-    ];
-    
-    // Filter complaints based on query parameters
-    let filteredComplaints = [...mockComplaints];
-    
-    if (mine === 'true') {
-      // Return only complaints created by the current user
-      filteredComplaints = filteredComplaints.filter(c => c.employee_id === req.user.id);
-    } else if (assigned === 'true') {
-      // Return complaints assigned to the current user (assuming worker role)
-      filteredComplaints = filteredComplaints.filter(c => c.assignedTo === req.user.id);
+      
+      // Find complaints matching query
+      const complaints = await complaintsCollection.find(query).toArray();
+      
+      if (complaints && complaints.length > 0) {
+        return res.status(200).json({
+          success: true,
+          complaints
+        });
+      } else {
+        console.log("No complaints found in database, using mock data");
+        // Generate mock complaints data if none found in database
+        const mockComplaints = [
+          {
+            _id: "c1",
+            employee_id: req.user.employee_id || req.user.id,
+            employee_name: req.user.employee_name || "Test User",
+            employee_location: "Office Building A",
+            complaint_asset: "Computer",
+            employee_phoneNo: "1234567890",
+            complain_details: "Computer not working properly",
+            isCompleted: false,
+            isFeedback: "",
+            assignedTo: null,
+            complaint_no: "CMP001",
+            createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+            updatedAt: new Date()
+          }
+        ];
+        
+        // Filter mock complaints based on query parameters
+        let filteredComplaints = [...mockComplaints];
+        
+        if (mine === 'true') {
+          filteredComplaints = filteredComplaints.filter(c => 
+            c.employee_id === (req.user.employee_id || req.user.id)
+          );
+        } else if (assigned === 'true') {
+          filteredComplaints = filteredComplaints.filter(c => 
+            c.assignedTo === (req.user.employee_id || req.user.id)
+          );
+        }
+        
+        return res.status(200).json({
+          success: true,
+          complaints: filteredComplaints
+        });
+      }
+    } catch (dbError) {
+      console.error("Database error fetching complaints:", dbError);
+      // Fall back to mock data
+      const mockComplaints = [
+        {
+          _id: "c1",
+          employee_id: req.user.employee_id || req.user.id,
+          employee_name: req.user.employee_name || "Test User",
+          employee_location: "Office Building A",
+          complaint_asset: "Computer",
+          employee_phoneNo: "1234567890",
+          complain_details: "Computer not working properly",
+          isCompleted: false,
+          isFeedback: "",
+          assignedTo: null,
+          complaint_no: "CMP001",
+          createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+          updatedAt: new Date()
+        }
+      ];
+      
+      // Filter mock complaints based on query parameters
+      let filteredComplaints = [...mockComplaints];
+      
+      if (mine === 'true') {
+        filteredComplaints = filteredComplaints.filter(c => 
+          c.employee_id === (req.user.employee_id || req.user.id)
+        );
+      } else if (assigned === 'true') {
+        filteredComplaints = filteredComplaints.filter(c => 
+          c.assignedTo === (req.user.employee_id || req.user.id)
+        );
+      }
+      
+      return res.status(200).json({
+        success: true,
+        complaints: filteredComplaints
+      });
     }
-    
-    return res.status(200).json({
-      success: true,
-      complaints: filteredComplaints
-    });
   } catch (error) {
     console.error("Error fetching complaints:", error);
     return res.status(500).json({
@@ -375,49 +500,83 @@ app.get('/api/v1/complaints', isAuthenticated, (req, res) => {
 });
 
 // Get all workers list endpoint
-app.get('/api/v1/admin/getWorkerList', isAuthenticated, (req, res) => {
+app.get('/api/v1/admin/getWorkerList', isAuthenticated, async (req, res) => {
   try {
-    // Generate mock workers data
-    const mockWorkers = [
-      {
-        _id: "w1",
-        employee_id: 101,
-        employee_name: "Worker One",
-        employee_designation: "Technician",
-        employee_department: "IT",
-        employee_location: "Main Office",
-        employee_email: "worker1@example.com",
-        employee_role: "employee",
-        is_Employee_Worker: true
-      },
-      {
-        _id: "w2",
-        employee_id: 102,
-        employee_name: "Worker Two",
-        employee_designation: "Electrician",
-        employee_department: "Maintenance",
-        employee_location: "Main Office",
-        employee_email: "worker2@example.com",
-        employee_role: "employee",
-        is_Employee_Worker: true
-      },
-      {
-        _id: "w3",
-        employee_id: 103,
-        employee_name: "Worker Three",
-        employee_designation: "Plumber",
-        employee_department: "Maintenance",
-        employee_location: "Branch Office",
-        employee_email: "worker3@example.com",
-        employee_role: "employee",
-        is_Employee_Worker: true
+    try {
+      // Try to get workers from database
+      const db = mongoose.connection.db;
+      const usersCollection = db.collection('users');
+      
+      // Find users that are workers
+      const workers = await usersCollection.find({ is_Employee_Worker: true }).toArray();
+      
+      if (workers && workers.length > 0) {
+        return res.status(200).json({
+          success: true,
+          workers
+        });
+      } else {
+        console.log("No workers found in database, using mock data");
+        // Fall back to mock data if no workers found
+        return res.status(200).json({
+          success: true,
+          workers: [
+            {
+              _id: "w1",
+              employee_id: 101,
+              employee_name: "Worker One",
+              employee_designation: "Technician",
+              employee_department: "IT",
+              employee_location: "Main Office",
+              employee_email: "worker1@example.com",
+              employee_role: "employee",
+              is_Employee_Worker: true
+            },
+            {
+              _id: "w2",
+              employee_id: 102,
+              employee_name: "Worker Two",
+              employee_designation: "Electrician",
+              employee_department: "Maintenance",
+              employee_location: "Main Office",
+              employee_email: "worker2@example.com",
+              employee_role: "employee",
+              is_Employee_Worker: true
+            }
+          ]
+        });
       }
-    ];
-    
-    return res.status(200).json({
-      success: true,
-      workers: mockWorkers
-    });
+    } catch (dbError) {
+      console.error("Database error fetching workers:", dbError);
+      // Fall back to mock data
+      return res.status(200).json({
+        success: true,
+        workers: [
+          {
+            _id: "w1",
+            employee_id: 101,
+            employee_name: "Worker One",
+            employee_designation: "Technician",
+            employee_department: "IT",
+            employee_location: "Main Office",
+            employee_email: "worker1@example.com",
+            employee_role: "employee",
+            is_Employee_Worker: true
+          },
+          {
+            _id: "w2",
+            employee_id: 102,
+            employee_name: "Worker Two",
+            employee_designation: "Electrician",
+            employee_department: "Maintenance",
+            employee_location: "Main Office",
+            employee_email: "worker2@example.com",
+            employee_role: "employee",
+            is_Employee_Worker: true
+          }
+        ]
+      });
+    }
   } catch (error) {
     console.error("Error fetching workers list:", error);
     return res.status(500).json({

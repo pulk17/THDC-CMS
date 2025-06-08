@@ -27,6 +27,7 @@ import {
 } from '../ActionType';
 import { Dispatch, AnyAction } from 'redux';
 import { RootState } from '../store';
+import { API_PATHS } from '../../api/config';
 
 // Define AppDispatch type
 type AppDispatch = Dispatch<any>;
@@ -45,7 +46,7 @@ export const registerComplaint = (
         
         const config = { headers: { "Content-type": "application/json" } };
         const { data } = await api.post(
-            "/api/v1/registerComplaint", 
+            "/registerComplaint", 
             { employee_location, complaint_asset, employee_phoneNo, complain_details }, 
             config
         );
@@ -71,7 +72,7 @@ export const getAllMyComplaints = () => async (dispatch: AppDispatch) => {
             type: GET_ALL_MY_COMPLAINT_REQUEST
         });
         
-        const { data } = await api.get("/api/v1/complaints?mine=true");
+        const { data } = await api.get("/complaints?mine=true");
         
         dispatch({
             type: GET_ALL_MY_COMPLAINT_SUCCESS,
@@ -100,7 +101,7 @@ export const getAllEmployeeComplaints = () => async (dispatch: Dispatch<AnyActio
 
         dispatch({ type: GET_ALL_EMPLOYEE_COMPLAINT_REQUEST });
 
-        const { data } = await api.get("/api/v1/complaints");
+        const { data } = await api.get("/complaints");
 
         dispatch({
             type: GET_ALL_EMPLOYEE_COMPLAINT_SUCCESS,
@@ -136,7 +137,7 @@ export const getAllWorkersList = () => async (dispatch: Dispatch<AnyAction>, get
         // Simplified logging
         console.log("Fetching workers list...");
         
-        const { data } = await api.get("/api/v1/admin/getWorkerList");
+        const { data } = await api.get("/admin/getWorkerList");
         
         // Filter to only include users marked as workers
         const workers = data.workers ? data.workers.filter((worker: any) => worker.is_Employee_Worker) : [];
@@ -183,7 +184,7 @@ export const assignComplaintsToWorkers = (complaintId: string, employeeId: strin
 
         dispatch({ type: ASSIGN_COMPLAINT_TO_WORKER_REQUEST });
 
-        const { data } = await api.put(`/api/v1/admin/assignComplaintToWorkers`, {
+        const { data } = await api.put(`/admin/assignComplaintToWorkers`, {
             complaint_id: complaintId,
             employee_id: employeeId,
         });
@@ -209,7 +210,7 @@ export const findArrivedComplaints = () => async (dispatch: AppDispatch) => {
             type: FIND_ARRIVED_COMPLAINT_REQUEST
         });
         
-        const { data } = await api.get("/api/v1/complaints?assigned=true");
+        const { data } = await api.get("/complaints?assigned=true");
         
         dispatch({
             type: FIND_ARRIVED_COMPLAINT_SUCCESS,
@@ -236,7 +237,7 @@ export const changeStatusOfComplaint = (
         
         const config = { headers: { "Content-type": "application/json" } };
         const { data } = await api.put(
-            "/api/v1/changeStatusOfComplaint",
+            "/changeStatusOfComplaint",
             { id, isCompleted, isFeedback },
             config
         );
@@ -255,37 +256,37 @@ export const changeStatusOfComplaint = (
     }
 };
 
-// Filter complaints by date and status
+// Filter complaints
 export const filterComplaintAction = (startDate: string, endDate: string, status: string) => async (dispatch: Dispatch<AnyAction>, getState: () => RootState) => {
-  try {
-    // Check if user has admin role before making the request
-    const { user } = getState().loginUser;
-    if (!user || user.employee_role !== 'admin') {
-      dispatch({
-        type: FILTER_COMPLAINT_FAIL,
-        payload: 'Unauthorized: Admin access required'
-      });
-      return;
+    try {
+        // Check if user has admin role before making the request
+        const { user } = getState().loginUser;
+        if (!user || user.employee_role !== 'admin') {
+            dispatch({
+                type: FILTER_COMPLAINT_FAIL,
+                payload: 'Unauthorized: Admin access required'
+            });
+            return;
+        }
+
+        dispatch({ type: FILTER_COMPLAINT_REQUEST });
+
+        const { data } = await api.post('/admin/filterComplaints', {
+            startDate,
+            endDate,
+            status
+        });
+
+        dispatch({
+            type: FILTER_COMPLAINT_SUCCESS,
+            payload: data.filteredComplaints
+        });
+    } catch (error: any) {
+        dispatch({
+            type: FILTER_COMPLAINT_FAIL,
+            payload: error.response && error.response.data.message
+                ? error.response.data.message
+                : 'Failed to filter complaints'
+        });
     }
-
-    dispatch({ type: FILTER_COMPLAINT_REQUEST });
-
-    const { data } = await api.post('/api/v1/admin/filterComplaints', {
-      startDate,
-      endDate,
-      status,
-    });
-
-    dispatch({
-      type: FILTER_COMPLAINT_SUCCESS,
-      payload: data.complaints,
-    });
-  } catch (error: any) {
-    dispatch({
-      type: FILTER_COMPLAINT_FAIL,
-      payload: error.response && error.response.data.message
-        ? error.response.data.message
-        : 'Failed to filter complaints',
-    });
-  }
 }; 

@@ -33,6 +33,14 @@ api.interceptors.request.use(
     
     // Simplify request logging
     console.log(`[API] ${config.method?.toUpperCase()} ${config.url}`);
+    
+    // Check for duplicate api/v1 in URL
+    if (config.url && config.url.includes('/api/v1/api/v1/')) {
+      console.warn('[API Warning] Detected duplicate /api/v1/ in URL path. This may cause 404 errors.');
+      // Fix the URL by removing the duplicate
+      config.url = config.url.replace('/api/v1/api/v1/', '/api/v1/');
+    }
+    
     return config;
   },
   (error) => {

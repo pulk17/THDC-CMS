@@ -2,7 +2,7 @@ services:
   - type: web
     name: thdc-cms-backend
     env: node
-    buildCommand: npm install && npm install -g typescript && npm run clean && tsc
+    buildCommand: node build.js
     startCommand: npm start
     envVars:
       - key: NODE_ENV

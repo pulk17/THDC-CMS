@@ -24,6 +24,31 @@ fi
 # Create dist directory
 mkdir -p dist
 
+# Create a .env file for local development if it doesn't exist
+if [ ! -f ".env" ]; then
+  echo "Creating .env file for local development..."
+  echo "NODE_ENV=production" > .env
+  echo "PORT=10000" >> .env
+  
+  # Check if MONGODB_URL is set and properly formatted
+  if [ -n "$MONGODB_URL" ]; then
+    # Remove any quotes
+    MONGODB_URL=$(echo $MONGODB_URL | sed 's/^"\(.*\)"$/\1/')
+    
+    # Check if it starts with mongodb:// or mongodb+srv://
+    if [[ ! $MONGODB_URL == mongodb://* && ! $MONGODB_URL == mongodb+srv://* ]]; then
+      echo "Warning: MONGODB_URL doesn't start with mongodb:// or mongodb+srv://, adding mongodb://"
+      MONGODB_URL="mongodb://$MONGODB_URL"
+      # Update the environment variable for the current process
+      export MONGODB_URL="$MONGODB_URL"
+    fi
+    
+    echo "MONGODB_URL=$MONGODB_URL" >> .env
+  else
+    echo "Warning: MONGODB_URL is not set!"
+  fi
+fi
+
 # Try TypeScript compilation
 echo "Attempting TypeScript compilation..."
 if npx tsc --skipLibCheck; then

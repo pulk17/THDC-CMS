@@ -114,11 +114,28 @@ app.get('/api/v1/logout', (req, res) => {
 // Connect to database
 const connectDatabase = async () => {
   try {
-    const DB_URI = process.env.MONGODB_URL || "mongodb://localhost:27017/cms";
+    // Get MongoDB URL from environment variables
+    let DB_URI = process.env.MONGODB_URL || "mongodb://localhost:27017/cms";
+    
+    // Ensure the connection string starts with mongodb:// or mongodb+srv://
+    if (!DB_URI.startsWith("mongodb://") && !DB_URI.startsWith("mongodb+srv://")) {
+      // If it has quotes, remove them
+      DB_URI = DB_URI.replace(/^"(.*)"$/, '$1');
+      
+      // If it still doesn't have the proper prefix, add mongodb://
+      if (!DB_URI.startsWith("mongodb://") && !DB_URI.startsWith("mongodb+srv://")) {
+        console.warn("MongoDB connection string doesn't start with mongodb:// or mongodb+srv://, adding mongodb://");
+        DB_URI = "mongodb://" + DB_URI;
+      }
+    }
+    
     console.log("Connecting to MongoDB...");
     console.log(`Using connection string: ${DB_URI.substring(0, DB_URI.indexOf('@') > 0 ? DB_URI.indexOf('@') : 10)}...`);
     
-    await mongoose.connect(DB_URI);
+    await mongoose.connect(DB_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true
+    });
     
     console.log("MongoDB connected successfully");
   } catch (error) {

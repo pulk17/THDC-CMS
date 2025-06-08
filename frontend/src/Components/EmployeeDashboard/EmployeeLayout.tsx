@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Flex, Alert, AlertIcon, AlertTitle, AlertDescription, Button } from '@chakra-ui/react';
+import { Box, Flex, Alert, AlertIcon, AlertTitle, AlertDescription, Button, useBreakpointValue } from '@chakra-ui/react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import { useDispatch, useSelector } from 'react-redux';
@@ -7,6 +7,7 @@ import { getAllMyComplaints, findArrivedComplaints } from '../../Redux/Actions/C
 import { ThunkDispatch } from 'redux-thunk';
 import { RootState } from '../../Redux/store';
 import { AnyAction } from 'redux';
+import ResponsiveNavbar from '../Common/ResponsiveNavbar';
 
 const EmployeeLayout: React.FC = () => {
   const dispatch = useDispatch<ThunkDispatch<RootState, unknown, AnyAction>>();
@@ -102,40 +103,53 @@ const EmployeeLayout: React.FC = () => {
   }
 
   return (
-    <Flex h="100vh">
-      <Sidebar />
-      <Box flex="1" p={5} overflowY="auto">
-        {hasError ? (
-          <Alert
-            status="error"
-            variant="subtle"
-            flexDirection="column"
-            alignItems="center"
-            justifyContent="center"
-            textAlign="center"
-            height="200px"
-            borderRadius="md"
-          >
-            <AlertIcon boxSize="40px" mr={0} />
-            <AlertTitle mt={4} mb={1} fontSize="lg">
-              Error Loading Data
-            </AlertTitle>
-            <AlertDescription maxWidth="sm">
-              {getErrorMessage()}
-            </AlertDescription>
-            <Flex mt={4}>
-              <Button colorScheme="red" mr={3} onClick={handleRetry}>
-                Retry
-              </Button>
-              <Button variant="ghost" onClick={handleGoHome}>
-                Go Home
-              </Button>
-            </Flex>
-          </Alert>
-        ) : (
-          <Outlet />
-        )}
-      </Box>
+    <Flex h="100vh" direction="column">
+      {/* Responsive Navbar - only visible on mobile */}
+      <ResponsiveNavbar 
+        sidebarContent={<Sidebar />}
+        colorScheme="teal"
+        title="Employee Dashboard"
+      />
+      
+      <Flex flex="1" overflow="hidden">
+        {/* Regular Sidebar - hidden on mobile */}
+        <Box display={{ base: 'none', md: 'block' }}>
+          <Sidebar />
+        </Box>
+        
+        <Box flex="1" p={5} overflowY="auto">
+          {hasError ? (
+            <Alert
+              status="error"
+              variant="subtle"
+              flexDirection="column"
+              alignItems="center"
+              justifyContent="center"
+              textAlign="center"
+              height="200px"
+              borderRadius="md"
+            >
+              <AlertIcon boxSize="40px" mr={0} />
+              <AlertTitle mt={4} mb={1} fontSize="lg">
+                Error Loading Data
+              </AlertTitle>
+              <AlertDescription maxWidth="sm">
+                {getErrorMessage()}
+              </AlertDescription>
+              <Flex mt={4}>
+                <Button colorScheme="red" mr={3} onClick={handleRetry}>
+                  Retry
+                </Button>
+                <Button variant="ghost" onClick={handleGoHome}>
+                  Go Home
+                </Button>
+              </Flex>
+            </Alert>
+          ) : (
+            <Outlet />
+          )}
+        </Box>
+      </Flex>
     </Flex>
   );
 };

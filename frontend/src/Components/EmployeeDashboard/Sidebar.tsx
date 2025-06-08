@@ -9,6 +9,7 @@ import {
   Icon,
   Divider,
   Heading,
+  useBreakpointValue,
 } from "@chakra-ui/react";
 import {
   FaRegEdit,
@@ -35,6 +36,11 @@ const Sidebar: React.FC = () => {
     user: lu,
     isLoggedIn,
   } = useSelector((state: RootState) => state.loginUser);
+  
+  // Responsive adjustments
+  const isMobile = useBreakpointValue({ base: true, md: false });
+  const sidebarWidth = useBreakpointValue({ base: "100%", md: "280px" });
+  const showFooter = useBreakpointValue({ base: false, md: true });
   
   useEffect(() => {
     if (!isLoggedIn) {
@@ -68,38 +74,44 @@ const Sidebar: React.FC = () => {
       initial="hidden"
       animate="visible"
       variants={containerVariants}
-      w="280px"
+      w={sidebarWidth}
       p={6}
       bg="white"
-      h="100vh"
-      boxShadow="sm"
-      borderRight="1px solid"
+      h={isMobile ? "auto" : "100vh"}
+      boxShadow={isMobile ? "none" : "sm"}
+      borderRight={isMobile ? "none" : "1px solid"}
       borderColor="gray.100"
       fontFamily="'Inter', sans-serif"
       overflowY="auto"
+      position="relative"
     >
-      <MotionFlex 
-        variants={itemVariants}
-        align="center" 
-        mb={8} 
-        direction="column"
-      >
-        <Avatar 
-          name={lu ? lu.employee_name : ""} 
-          src="/assets/profile.png" 
-          size="xl" 
-          mb={4}
-          bg="teal.500"
-        />
-        <Heading size="sm" fontWeight="medium" textAlign="center">
-          {lu && lu.employee_name}
-        </Heading>
-        <Text fontSize="sm" color="gray.500" mt={1}>
-          Employee
-        </Text>
-      </MotionFlex>
-      
-      <Divider borderColor="gray.200" mb={6} />
+      {/* Only show profile section on desktop or at the top of mobile sidebar */}
+      {(!isMobile || true) && (
+        <>
+          <MotionFlex 
+            variants={itemVariants}
+            align="center" 
+            mb={8} 
+            direction="column"
+          >
+            <Avatar 
+              name={lu ? lu.employee_name : ""} 
+              src="/assets/profile.png" 
+              size={isMobile ? "md" : "xl"} 
+              mb={4}
+              bg="teal.500"
+            />
+            <Heading size="sm" fontWeight="medium" textAlign="center">
+              {lu && lu.employee_name}
+            </Heading>
+            <Text fontSize="sm" color="gray.500" mt={1}>
+              Employee
+            </Text>
+          </MotionFlex>
+          
+          <Divider borderColor="gray.200" mb={6} />
+        </>
+      )}
       
       <MotionVStack align="start" spacing={1} variants={containerVariants}>
         <MotionBox variants={itemVariants} width="100%">
@@ -229,17 +241,19 @@ const Sidebar: React.FC = () => {
         </MotionBox>
       </MotionVStack>
       
-      <Text 
-        fontSize="xs" 
-        color="gray.400" 
-        position="absolute" 
-        bottom="4" 
-        left="0" 
-        width="100%" 
-        textAlign="center"
-      >
-        THDC Complaint Management System
-      </Text>
+      {showFooter && (
+        <Text 
+          fontSize="xs" 
+          color="gray.400" 
+          position="absolute" 
+          bottom="4" 
+          left="0" 
+          width="100%" 
+          textAlign="center"
+        >
+          THDC Complaint Management System
+        </Text>
+      )}
     </MotionBox>
   );
 };

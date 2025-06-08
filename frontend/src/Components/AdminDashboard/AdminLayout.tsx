@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Flex, Alert, AlertIcon, AlertTitle, AlertDescription, Button } from '@chakra-ui/react';
+import { Box, Flex, Alert, AlertIcon, AlertTitle, AlertDescription, Button, useBreakpointValue } from '@chakra-ui/react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import AdminSidebar from './AdminSidebar';
 import { useDispatch, useSelector } from 'react-redux';
@@ -7,6 +7,7 @@ import { getAllEmployeeComplaints, getAllWorkersList } from '../../Redux/Actions
 import { ThunkDispatch } from 'redux-thunk';
 import { RootState } from '../../Redux/store';
 import { AnyAction } from 'redux';
+import ResponsiveNavbar from '../Common/ResponsiveNavbar';
 
 const AdminLayout: React.FC = () => {
   const dispatch = useDispatch<ThunkDispatch<RootState, unknown, AnyAction>>();
@@ -117,42 +118,55 @@ const AdminLayout: React.FC = () => {
   }
 
   return (
-    <Flex>
-      <AdminSidebar />
-      <Box flex="1" p={5} bg="gray.50" h="100vh" overflowY="auto">
-        {hasError ? (
-          <Alert 
-            status="error" 
-            variant="subtle"
-            flexDirection="column"
-            alignItems="center"
-            justifyContent="center"
-            textAlign="center"
-            height="200px"
-            borderRadius="md"
-          >
-            <AlertIcon boxSize="40px" mr={0} />
-            <AlertTitle mt={4} mb={1} fontSize="lg">
-              Error Loading Data
-            </AlertTitle>
-            <AlertDescription maxWidth="sm">
-              {getErrorMessage()}
-            </AlertDescription>
-            <Box mt={4} display="flex" gap={4}>
-              <Button colorScheme="teal" onClick={handleRetry}>
-                Retry
-              </Button>
-              <Button colorScheme="gray" onClick={handleGoHome}>
-                Go to Home
-              </Button>
-            </Box>
-          </Alert>
-        ) : isDataLoading ? (
-          <Box textAlign="center" py={10}>Loading admin dashboard...</Box>
-        ) : (
-          <Outlet />
-        )}
-      </Box>
+    <Flex h="100vh" direction="column">
+      {/* Responsive Navbar - only visible on mobile */}
+      <ResponsiveNavbar 
+        sidebarContent={<AdminSidebar />}
+        colorScheme="purple"
+        title="Admin Dashboard"
+      />
+      
+      <Flex flex="1" overflow="hidden">
+        {/* Regular Sidebar - hidden on mobile */}
+        <Box display={{ base: 'none', md: 'block' }}>
+          <AdminSidebar />
+        </Box>
+        
+        <Box flex="1" p={5} bg="gray.50" overflowY="auto">
+          {hasError ? (
+            <Alert 
+              status="error" 
+              variant="subtle"
+              flexDirection="column"
+              alignItems="center"
+              justifyContent="center"
+              textAlign="center"
+              height="200px"
+              borderRadius="md"
+            >
+              <AlertIcon boxSize="40px" mr={0} />
+              <AlertTitle mt={4} mb={1} fontSize="lg">
+                Error Loading Data
+              </AlertTitle>
+              <AlertDescription maxWidth="sm">
+                {getErrorMessage()}
+              </AlertDescription>
+              <Box mt={4} display="flex" gap={4}>
+                <Button colorScheme="teal" onClick={handleRetry}>
+                  Retry
+                </Button>
+                <Button colorScheme="gray" onClick={handleGoHome}>
+                  Go to Home
+                </Button>
+              </Box>
+            </Alert>
+          ) : isDataLoading ? (
+            <Box textAlign="center" py={10}>Loading admin dashboard...</Box>
+          ) : (
+            <Outlet />
+          )}
+        </Box>
+      </Flex>
     </Flex>
   );
 };

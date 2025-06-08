@@ -115,6 +115,12 @@ app.post('/api/v1/login', async (req, res) => {
     // In a real implementation, you would verify against the database
     console.log(`Login attempt for employee ID: ${employee_id}`);
 
+    // Determine role based on employee_id for testing purposes
+    // employee_id starting with 1 are regular employees
+    // employee_id starting with 9 are admins
+    const isAdmin = String(employee_id).startsWith('9');
+    const isWorker = String(employee_id).startsWith('1');
+
     // Create a mock token
     const token = jwt.sign(
       { id: employee_id },
@@ -128,19 +134,26 @@ app.post('/api/v1/login', async (req, res) => {
       httpOnly: true
     };
 
+    // Create appropriate user object based on role
+    const user = {
+      _id: `user_${employee_id}`,
+      employee_id: Number(employee_id),
+      employee_name: isAdmin ? "Admin User" : "Regular Employee",
+      employee_role: isAdmin ? "admin" : "employee",
+      is_Employee_Worker: isWorker,
+      employee_department: isAdmin ? "Administration" : "Operations",
+      employee_designation: isAdmin ? "Manager" : "Staff",
+      employee_location: "Headquarters",
+      employee_email: `user${employee_id}@example.com`
+    };
+
     // Return success response with token
     return res.status(200)
       .cookie("token", token, options)
       .json({
         success: true,
         token,
-        user: {
-          employee_id,
-          employee_name: "Test User",
-          employee_role: "admin", // Default to admin for testing
-          employee_department: "IT",
-          employee_designation: "Developer"
-        }
+        user
       });
   } catch (error) {
     console.error("Login error:", error);
@@ -188,6 +201,325 @@ app.post('/api/v1/register', async (req, res) => {
     });
   } catch (error) {
     console.error("Registration error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    });
+  }
+});
+
+// Get all complaints endpoint (with optional filtering)
+app.get('/api/v1/complaints', isAuthenticated, (req, res) => {
+  try {
+    const { mine, assigned } = req.query;
+    
+    console.log(`Complaints request - mine: ${mine}, assigned: ${assigned}`);
+    
+    // Generate mock complaints data
+    const mockComplaints = [
+      {
+        _id: "c1",
+        employee_id: req.user.id,
+        employee_name: "Test User",
+        employee_location: "Office Building A",
+        complaint_asset: "Computer",
+        employee_phoneNo: "1234567890",
+        complain_details: "Computer not working properly",
+        isCompleted: false,
+        isFeedback: "",
+        assignedTo: null,
+        complaint_no: "CMP001",
+        createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
+        updatedAt: new Date()
+      },
+      {
+        _id: "c2",
+        employee_id: req.user.id,
+        employee_name: "Test User",
+        employee_location: "Office Building B",
+        complaint_asset: "Printer",
+        employee_phoneNo: "1234567890",
+        complain_details: "Printer out of ink",
+        isCompleted: true,
+        isFeedback: "Fixed by replacing ink cartridge",
+        assignedTo: "w1",
+        complaint_no: "CMP002",
+        createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000), // 14 days ago
+        updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) // 2 days ago
+      },
+      {
+        _id: "c3",
+        employee_id: "other_user",
+        employee_name: "Another User",
+        employee_location: "Office Building C",
+        complaint_asset: "Air Conditioner",
+        employee_phoneNo: "9876543210",
+        complain_details: "AC not cooling properly",
+        isCompleted: false,
+        isFeedback: "",
+        assignedTo: "w1",
+        complaint_no: "CMP003",
+        createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
+        updatedAt: new Date()
+      }
+    ];
+    
+    // Filter complaints based on query parameters
+    let filteredComplaints = [...mockComplaints];
+    
+    if (mine === 'true') {
+      // Return only complaints created by the current user
+      filteredComplaints = filteredComplaints.filter(c => c.employee_id === req.user.id);
+    } else if (assigned === 'true') {
+      // Return complaints assigned to the current user (assuming worker role)
+      filteredComplaints = filteredComplaints.filter(c => c.assignedTo === req.user.id);
+    }
+    
+    return res.status(200).json({
+      success: true,
+      complaints: filteredComplaints
+    });
+  } catch (error) {
+    console.error("Error fetching complaints:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    });
+  }
+});
+
+// Get all workers list endpoint
+app.get('/api/v1/admin/getWorkerList', isAuthenticated, (req, res) => {
+  try {
+    // Generate mock workers data
+    const mockWorkers = [
+      {
+        _id: "w1",
+        employee_id: 101,
+        employee_name: "Worker One",
+        employee_designation: "Technician",
+        employee_department: "IT",
+        employee_location: "Main Office",
+        employee_email: "worker1@example.com",
+        employee_role: "employee",
+        is_Employee_Worker: true
+      },
+      {
+        _id: "w2",
+        employee_id: 102,
+        employee_name: "Worker Two",
+        employee_designation: "Electrician",
+        employee_department: "Maintenance",
+        employee_location: "Main Office",
+        employee_email: "worker2@example.com",
+        employee_role: "employee",
+        is_Employee_Worker: true
+      },
+      {
+        _id: "w3",
+        employee_id: 103,
+        employee_name: "Worker Three",
+        employee_designation: "Plumber",
+        employee_department: "Maintenance",
+        employee_location: "Branch Office",
+        employee_email: "worker3@example.com",
+        employee_role: "employee",
+        is_Employee_Worker: true
+      }
+    ];
+    
+    return res.status(200).json({
+      success: true,
+      workers: mockWorkers
+    });
+  } catch (error) {
+    console.error("Error fetching workers list:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    });
+  }
+});
+
+// Register complaint endpoint
+app.post('/api/v1/registerComplaint', isAuthenticated, (req, res) => {
+  try {
+    const { 
+      employee_location, 
+      complaint_asset, 
+      employee_phoneNo, 
+      complain_details 
+    } = req.body;
+    
+    // Basic validation
+    if (!employee_location || !complaint_asset || !employee_phoneNo || !complain_details) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide all required fields"
+      });
+    }
+    
+    // Generate a mock complaint with a unique ID and complaint number
+    const mockComplaint = {
+      _id: `c${Date.now()}`,
+      employee_id: req.user.id,
+      employee_name: "Test User",
+      employee_location,
+      complaint_asset,
+      employee_phoneNo,
+      complain_details,
+      isCompleted: false,
+      isFeedback: "",
+      assignedTo: null,
+      complaint_no: `CMP${Math.floor(1000 + Math.random() * 9000)}`,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
+    return res.status(201).json({
+      success: true,
+      compaint: mockComplaint
+    });
+  } catch (error) {
+    console.error("Error registering complaint:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    });
+  }
+});
+
+// Change status of complaint endpoint
+app.put('/api/v1/changeStatusOfComplaint', isAuthenticated, (req, res) => {
+  try {
+    const { id, isCompleted, isFeedback } = req.body;
+    
+    // Basic validation
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide complaint ID"
+      });
+    }
+    
+    // Mock updated complaint
+    const updatedComplaint = {
+      _id: id,
+      employee_id: req.user.id,
+      employee_name: "Test User",
+      employee_location: "Office Building A",
+      complaint_asset: "Computer",
+      employee_phoneNo: "1234567890",
+      complain_details: "Computer not working properly",
+      isCompleted: isCompleted || false,
+      isFeedback: isFeedback || "",
+      assignedTo: req.user.id,
+      complaint_no: "CMP001",
+      createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+      updatedAt: new Date()
+    };
+    
+    return res.status(200).json({
+      success: true,
+      updatedComplaint
+    });
+  } catch (error) {
+    console.error("Error changing complaint status:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    });
+  }
+});
+
+// Assign complaint to worker endpoint
+app.put('/api/v1/admin/assignComplaintToWorkers', isAuthenticated, (req, res) => {
+  try {
+    const { complaint_id, employee_id } = req.body;
+    
+    // Basic validation
+    if (!complaint_id || !employee_id) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide complaint ID and employee ID"
+      });
+    }
+    
+    // Mock assigned complaint
+    const complaint = {
+      _id: complaint_id,
+      employee_id: "some_user",
+      employee_name: "Some User",
+      employee_location: "Office Building C",
+      complaint_asset: "Air Conditioner",
+      employee_phoneNo: "9876543210",
+      complain_details: "AC not cooling properly",
+      isCompleted: false,
+      isFeedback: "",
+      assignedTo: employee_id,
+      complaint_no: "CMP003",
+      createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+      updatedAt: new Date()
+    };
+    
+    return res.status(200).json({
+      success: true,
+      complaint
+    });
+  } catch (error) {
+    console.error("Error assigning complaint:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    });
+  }
+});
+
+// Filter complaints endpoint
+app.post('/api/v1/admin/filterComplaints', isAuthenticated, (req, res) => {
+  try {
+    const { startDate, endDate, status } = req.body;
+    
+    // Generate mock filtered complaints
+    const filteredComplaints = [
+      {
+        _id: "c1",
+        employee_id: "user1",
+        employee_name: "User One",
+        employee_location: "Office Building A",
+        complaint_asset: "Computer",
+        employee_phoneNo: "1234567890",
+        complain_details: "Computer not working properly",
+        isCompleted: status === "completed",
+        isFeedback: status === "completed" ? "Fixed the issue" : "",
+        assignedTo: status === "assigned" ? "w1" : null,
+        complaint_no: "CMP001",
+        createdAt: new Date(startDate || Date.now() - 30 * 24 * 60 * 60 * 1000),
+        updatedAt: new Date()
+      },
+      {
+        _id: "c2",
+        employee_id: "user2",
+        employee_name: "User Two",
+        employee_location: "Office Building B",
+        complaint_asset: "Printer",
+        employee_phoneNo: "1234567890",
+        complain_details: "Printer out of ink",
+        isCompleted: status === "completed",
+        isFeedback: status === "completed" ? "Replaced ink cartridge" : "",
+        assignedTo: status === "assigned" ? "w2" : null,
+        complaint_no: "CMP002",
+        createdAt: new Date(startDate || Date.now() - 20 * 24 * 60 * 60 * 1000),
+        updatedAt: new Date()
+      }
+    ];
+    
+    return res.status(200).json({
+      success: true,
+      filteredComplaints
+    });
+  } catch (error) {
+    console.error("Error filtering complaints:", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error"

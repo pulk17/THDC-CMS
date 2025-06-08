@@ -19,6 +19,8 @@ import {
 } from './ComplaintAction';
 import { User } from '../../types/index';
 import api from '../../api/axios';
+import axios from 'axios';
+import { API_PATHS, API_ENDPOINTS } from '../../api/config';
 
 // Define AppDispatch type
 type AppDispatch = Dispatch<any>;
@@ -39,8 +41,9 @@ export const loginUser = (
             const delayPromise = new Promise(resolve => setTimeout(resolve, 500));
             await delayPromise;
             
+            // Use the API_PATHS for consistent endpoint paths
             const { data } = await api.post(
-                '/api/v1/login', 
+                API_PATHS.LOGIN, 
                 { 
                     employee_id: Number(employee_id), 
                     employee_password 
@@ -82,10 +85,53 @@ export const loginUser = (
                 // Get the configured API URL for debugging
                 const apiBaseUrl = process.env.REACT_APP_API_URL || 'http://localhost:6050';
                 console.log("Configured API URL:", apiBaseUrl);
+                console.log("Attempting to access endpoint:", apiBaseUrl + "/api/v1" + API_PATHS.LOGIN);
                 
-                // Check if we're using the wrong URL (the one from the error logs)
-                if (normalLoginError.config?.url?.includes('thdc-cms-e6oq.onrender.com')) {
-                    console.error("Using incorrect API URL. Please update your environment variables.");
+                // Check if we're using the wrong URL path
+                if (normalLoginError.config?.url?.includes('/api/v1/login')) {
+                    console.error("Using incorrect API path. The '/api/v1' prefix might be duplicated.");
+                }
+                
+                // Try with the full URL as a last resort
+                try {
+                    console.log("Trying alternative endpoint as a fallback...");
+                    // Use the full endpoint URL from API_ENDPOINTS
+                    const { data } = await axios.post(
+                        API_ENDPOINTS.LOGIN, 
+                        { 
+                            employee_id: Number(employee_id), 
+                            employee_password 
+                        },
+                        {
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            withCredentials: true
+                        }
+                    );
+                    
+                    if (data && data.token) {
+                        localStorage.setItem('authToken', data.token);
+                        console.log("Token saved to localStorage from fallback request:", data.token);
+                        
+                        dispatch({
+                            type: LOGIN_SUCCESS,
+                            payload: data
+                        });
+                        
+                        // Load appropriate data based on user role
+                        if (data.user.employee_role === "admin") {
+                            dispatch(getAllEmployeeComplaints());
+                            dispatch(getAllWorkersList());
+                        } else {
+                            dispatch(getAllMyComplaints());
+                            dispatch(findArrivedComplaints());
+                        }
+                        
+                        return;
+                    }
+                } catch (fallbackError) {
+                    console.error("Fallback request also failed:", fallbackError);
                 }
                 
                 // Dispatch a more user-friendly error for cold starts
@@ -101,7 +147,7 @@ export const loginUser = (
             
             try {
                 const { data } = await api.post(
-                    '/api/v1/login', 
+                    API_PATHS.LOGIN, 
                     { 
                         employee_id: Number(employee_id), 
                         employee_password,

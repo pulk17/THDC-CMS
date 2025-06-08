@@ -3,13 +3,16 @@ import axios from 'axios';
 // Extract the base URL from environment variables or use default
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:6050';
 
+// Add /api/v1 to the base URL since all our endpoints are under this path
+const API_URL_WITH_PREFIX = `${API_BASE_URL}/api/v1`;
+
 // Log the API URL being used (for debugging)
-console.log(`API configured with base URL: ${API_BASE_URL}`);
+console.log(`API configured with base URL: ${API_URL_WITH_PREFIX}`);
 
 // Create an axios instance with default config
 const api = axios.create({
-  // Use the configured base URL
-  baseURL: API_BASE_URL,
+  // Use the configured base URL with the API prefix
+  baseURL: API_URL_WITH_PREFIX,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -103,9 +106,10 @@ api.interceptors.response.use(
           window.location.href = '/';
         }
       }
-    } else if (status === 404 && error.config?.url?.includes('/api/v1/login')) {
+    } else if (status === 404 && error.config?.url?.includes('/login')) {
       // Special handling for login 404 errors which might indicate wrong API URL
-      console.error('[API URL Error] Login endpoint not found. Check if API_BASE_URL is correct:', API_BASE_URL);
+      console.error('[API URL Error] Login endpoint not found. Check if API_BASE_URL is correct:', API_URL_WITH_PREFIX);
+      console.log('Attempting direct request to:', `${API_BASE_URL}/api/v1/login`);
     }
     
     return Promise.reject(error);

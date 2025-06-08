@@ -29,18 +29,16 @@ export const loginUser = (
     employee_password: string
 ) => async (dispatch: AppDispatch) => {
     try {
-        // First clear any existing state to ensure a fresh login
-        dispatch({ type: LOGIN_RESET });
-        
-        // Clear any previous token to prevent auth conflicts
-        localStorage.removeItem('authToken');
-        
         dispatch({
             type: LOGIN_REQUEST
         });
         
         // First try with normal authentication
         try {
+            // Add a small delay to handle potential network issues or cold starts
+            const delayPromise = new Promise(resolve => setTimeout(resolve, 500));
+            await delayPromise;
+            
             const { data } = await api.post(
                 '/api/v1/login', 
                 { 
@@ -76,8 +74,29 @@ export const loginUser = (
             }
             
             return; // Exit the function if normal login succeeds
-        } catch (normalLoginError) {
-            // If normal login fails, try with unencrypted password flag
+        } catch (normalLoginError: any) {
+            // Check if this is a network error or 404 (which could indicate cold start or wrong URL)
+            if (!normalLoginError.response || normalLoginError.response.status === 404) {
+                console.error("API connection error. This could be due to a cold start on Render's free tier or incorrect API URL.");
+                
+                // Get the configured API URL for debugging
+                const apiBaseUrl = process.env.REACT_APP_API_URL || 'http://localhost:6050';
+                console.log("Configured API URL:", apiBaseUrl);
+                
+                // Check if we're using the wrong URL (the one from the error logs)
+                if (normalLoginError.config?.url?.includes('thdc-cms-e6oq.onrender.com')) {
+                    console.error("Using incorrect API URL. Please update your environment variables.");
+                }
+                
+                // Dispatch a more user-friendly error for cold starts
+                dispatch({
+                    type: LOGIN_FAIL,
+                    payload: "Unable to connect to the server. The backend might be starting up (cold start) or the API URL might be incorrect."
+                });
+                return;
+            }
+            
+            // If normal login fails with a proper response, try with unencrypted password flag
             console.log("Normal login failed, trying with unencrypted password...");
             
             try {
@@ -120,17 +139,43 @@ export const loginUser = (
             } catch (unencryptedLoginError: any) {
                 // If both login attempts fail, dispatch the error
                 console.error("Both login attempts failed:", unencryptedLoginError.response?.data || unencryptedLoginError.message);
+                
+                // Provide a more user-friendly error message
+                let errorMessage = "Invalid credentials. Please check your employee ID and password.";
+                
+                if (!unencryptedLoginError.response) {
+                    errorMessage = "Network error. Please check your connection and try again.";
+                } else if (unencryptedLoginError.response.status === 429) {
+                    errorMessage = "Too many login attempts. Please try again later.";
+                } else if (unencryptedLoginError.response.status >= 500) {
+                    errorMessage = "Server error. Please try again later.";
+                }
+                
                 dispatch({
                     type: LOGIN_FAIL,
-                    payload: unencryptedLoginError.response?.data?.message || "Login failed with both encrypted and unencrypted passwords"
+                    payload: errorMessage
                 });
             }
         }
     } catch(error: any) {
         console.error("Login error:", error.response?.data || error.message);
+        
+        // Provide a more user-friendly error message
+        let errorMessage = "Login failed";
+        
+        if (!error.response) {
+            errorMessage = "Network error. Please check your connection and try again.";
+        } else if (error.response.status === 401) {
+            errorMessage = "Invalid credentials. Please check your employee ID and password.";
+        } else if (error.response.status === 429) {
+            errorMessage = "Too many login attempts. Please try again later.";
+        } else if (error.response.status >= 500) {
+            errorMessage = "Server error. Please try again later.";
+        }
+        
         dispatch({
             type: LOGIN_FAIL,
-            payload: error.response?.data?.message || "Login failed"
+            payload: errorMessage
         });
     }
 };

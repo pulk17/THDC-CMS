@@ -32,7 +32,9 @@ import {
     ModalHeader,
     ModalBody,
     ModalFooter,
-    useDisclosure
+    useDisclosure,
+    UnorderedList,
+    ListItem
 } from '@chakra-ui/react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
@@ -41,7 +43,7 @@ import { RootState } from '../../../Redux/store';
 import { LoginFormData, RegisterFormData } from '../../../types';
 import { ThunkDispatch } from 'redux-thunk';
 import { AnyAction } from 'redux';
-import { ViewIcon, ViewOffIcon } from '@chakra-ui/icons';
+import { ViewIcon, ViewOffIcon, RepeatIcon, DeleteIcon } from '@chakra-ui/icons';
 
 const Auth: React.FC = () => {
     const [showPassword, setShowPassword] = useState<boolean>(false);
@@ -398,19 +400,53 @@ const Auth: React.FC = () => {
         }
     }, [loginError, registerError]);
 
-    // Add additional useEffect for persistent auth errors
+    // Update loading state detection
     useEffect(() => {
-        // If login error, show recovery options after a few seconds
-        if (loginError) {
-            const timer = setTimeout(() => {
-                setShowRecoveryOptions(true);
-            }, 2000);
+        if (loginLoading) {
+            // Set a timeout to detect if we get stuck in loading
+            if (loadingTimeoutRef.current) {
+                clearTimeout(loadingTimeoutRef.current);
+            }
             
-            return () => clearTimeout(timer);
+            // Increase timeout to 20 seconds to account for cold starts on Render free tier
+            loadingTimeoutRef.current = setTimeout(() => {
+                if (loginLoading) {
+                    handleStuckLoading();
+                }
+            }, 20000); // 20 seconds timeout for cold starts
         } else {
+            // Clear timeout if no longer loading
+            if (loadingTimeoutRef.current) {
+                clearTimeout(loadingTimeoutRef.current);
+                loadingTimeoutRef.current = null;
+            }
+        }
+    }, [loginLoading]);
+
+    // Add additional useEffect for persistent auth errors - modify to only show after multiple attempts
+    useEffect(() => {
+        // Track login attempts in session storage
+        const loginAttempts = parseInt(sessionStorage.getItem('loginAttempts') || '0');
+        
+        if (loginError) {
+            // Increment login attempts
+            const newAttempts = loginAttempts + 1;
+            sessionStorage.setItem('loginAttempts', newAttempts.toString());
+            
+            // Only show recovery options after 7 failed attempts
+            if (newAttempts >= 7) {
+                const timer = setTimeout(() => {
+                    setShowRecoveryOptions(true);
+                }, 2000);
+                
+                return () => clearTimeout(timer);
+            }
+        } else if (isLoggedIn) {
+            // Reset attempts on successful login
+            sessionStorage.removeItem('loginAttempts');
             setShowRecoveryOptions(false);
         }
-    }, [loginError]);
+    }, [loginError, isLoggedIn]);
 
     // Cleanup timeout on unmount
     useEffect(() => {
@@ -421,28 +457,6 @@ const Auth: React.FC = () => {
         };
     }, []);
 
-    // Update loading state detection
-    useEffect(() => {
-        if (loginLoading) {
-            // Set a timeout to detect if we get stuck in loading
-            if (loadingTimeoutRef.current) {
-                clearTimeout(loadingTimeoutRef.current);
-            }
-            
-            loadingTimeoutRef.current = setTimeout(() => {
-                if (loginLoading) {
-                    handleStuckLoading();
-                }
-            }, 10000); // 10 seconds timeout
-        } else {
-            // Clear timeout if no longer loading
-            if (loadingTimeoutRef.current) {
-                clearTimeout(loadingTimeoutRef.current);
-                loadingTimeoutRef.current = null;
-            }
-        }
-    }, [loginLoading]);
-
     return (
         <Flex
             minH="100vh"
@@ -451,23 +465,27 @@ const Auth: React.FC = () => {
             bg={bgColor}
             p={4}
         >
-            {/* Stuck in loading modal */}
+            {/* Stuck in loading modal - Update message for cold start */}
             <Modal isOpen={isModalOpen} onClose={closeModal}>
                 <ModalOverlay />
                 <ModalContent>
                     <ModalHeader>Loading Taking Too Long</ModalHeader>
                     <ModalBody>
-                        <Text>The application seems to be taking longer than expected to load.</Text>
-                        <Text mt={2}>You can:</Text>
-                        <Text mt={2}>1. Go back to login page</Text>
-                        <Text mt={2}>2. Try to navigate to dashboard if you're already logged in</Text>
+                        <Text>The backend service might be starting up (cold start on Render's free tier).</Text>
+                        <Text mt={2}>This can take up to 30-60 seconds on the first request.</Text>
+                        <Text mt={4} fontWeight="bold">You can:</Text>
+                        <UnorderedList mt={2}>
+                            <ListItem>Wait a bit longer and try again</ListItem>
+                            <ListItem>Refresh the page and try again</ListItem>
+                            <ListItem>Check if the backend service is running</ListItem>
+                        </UnorderedList>
                     </ModalBody>
                     <ModalFooter>
                         <Button colorScheme="teal" mr={3} onClick={handleRedirectToLogin}>
-                            Go to Login
+                            Try Again
                         </Button>
-                        <Button variant="ghost" onClick={handleRedirectToDashboard}>
-                            Try Dashboard
+                        <Button variant="ghost" onClick={closeModal}>
+                            Wait Longer
                         </Button>
                     </ModalFooter>
                 </ModalContent>
@@ -502,299 +520,279 @@ const Auth: React.FC = () => {
                     </Box>
                 </Stack>
                 
-                <Box
-                    p={8}
-                    bg={cardBgColor}
-                    boxShadow="sm"
-                    borderRadius="lg"
-                    border="1px solid"
-                    borderColor={borderColor}
-                >
-                    {/* Auth recovery section */}
-                    {showRecoveryOptions && (
-                        <Box 
-                            mb={6} 
-                            p={4} 
-                            bg="red.50" 
-                            borderRadius="md" 
-                            borderLeft="4px solid" 
-                            borderLeftColor="red.500"
-                        >
-                            <Heading size="sm" mb={2} color="red.600">
-                                Having trouble logging in?
-                            </Heading>
-                            <Text fontSize="sm" mb={3} color="red.700">
-                                Your session might be corrupted. Try these recovery options:
-                            </Text>
-                            <Flex wrap="wrap" gap={2}>
-                                <Button 
-                                    size="sm" 
-                                    colorScheme="red" 
-                                    variant="outline"
-                                    leftIcon={<span>🔄</span>}
-                                    onClick={handleResetAuth}
-                                >
-                                    Reset Auth Data
-                                </Button>
-                                <Button
-                                    size="sm"
-                                    colorScheme="gray"
-                                    variant="outline"
-                                    leftIcon={<span>🧹</span>}
-                                    onClick={() => {
-                                        // Clear browser storage
-                                        localStorage.clear();
-                                        sessionStorage.clear();
-                                        
-                                        toast({
-                                            title: 'Storage Cleared',
-                                            description: 'All browser storage has been cleared. Please try logging in again.',
-                                            status: 'info',
-                                            duration: 5000,
-                                            isClosable: true,
-                                        });
-                                        
-                                        // Reload the page
-                                        window.location.reload();
-                                    }}
-                                >
-                                    Clear All Storage
-                                </Button>
-                            </Flex>
-                        </Box>
-                    )}
-                    
-                    {showAlert && (loginError || registerError) && (
-                        <Flex mb={4} justify="space-between" align="center">
-                            <Alert status="error" borderRadius="md" flex="1">
-                                <AlertIcon />
-                                <Box flex="1">
-                                    <Text fontWeight="medium">{loginError || registerError}</Text>
-                                </Box>
-                                <CloseButton onClick={onClose} />
-                            </Alert>
-                            {loginError && (
-                                <Button 
-                                    ml={2} 
-                                    size="sm" 
-                                    colorScheme="red" 
-                                    variant="outline"
-                                    onClick={handleResetAuth}
-                                >
-                                    Reset Auth
-                                </Button>
-                            )}
-                        </Flex>
-                    )}
-                    
-                    <Tabs 
-                        isFitted 
-                        variant="enclosed" 
-                        colorScheme="teal" 
-                        index={tabIndex} 
-                        onChange={setTabIndex}
-                        mb={4}
+                {/* Auth recovery section - Only show after multiple failed attempts */}
+                {showRecoveryOptions && (
+                    <Box 
+                        mb={6} 
+                        p={4} 
+                        bg="red.50" 
+                        borderRadius="md" 
+                        borderLeft="4px solid" 
+                        borderLeftColor="red.500"
                     >
-                        <TabList mb="1em">
-                            <Tab 
-                                fontWeight="medium" 
-                                _selected={{ 
-                                    color: primaryColor, 
-                                    borderColor: borderColor,
-                                    borderBottom: '2px solid',
-                                    borderBottomColor: primaryColor
+                        <Heading size="sm" mb={2} color="red.600">
+                            Having trouble logging in?
+                        </Heading>
+                        <Text fontSize="sm" mb={3} color="red.700">
+                            Multiple login attempts failed. Try these recovery options:
+                        </Text>
+                        <Flex wrap="wrap" gap={2}>
+                            <Button
+                                leftIcon={<RepeatIcon />}
+                                size="sm"
+                                colorScheme="red"
+                                variant="outline"
+                                onClick={handleResetAuth}
+                            >
+                                Reset Auth Data
+                            </Button>
+                            <Button
+                                leftIcon={<DeleteIcon />}
+                                size="sm"
+                                colorScheme="red"
+                                variant="ghost"
+                                onClick={() => {
+                                    localStorage.clear();
+                                    sessionStorage.clear();
+                                    window.location.reload();
                                 }}
                             >
-                                Login
-                            </Tab>
-                            <Tab 
-                                fontWeight="medium"
-                                _selected={{ 
-                                    color: primaryColor, 
-                                    borderColor: borderColor,
-                                    borderBottom: '2px solid',
-                                    borderBottomColor: primaryColor
-                                }}
+                                Clear All Storage
+                            </Button>
+                        </Flex>
+                    </Box>
+                )}
+                
+                {showAlert && (loginError || registerError) && (
+                    <Flex mb={4} justify="space-between" align="center">
+                        <Alert status="error" borderRadius="md" flex="1">
+                            <AlertIcon />
+                            <Box flex="1">
+                                <Text fontWeight="medium">{loginError || registerError}</Text>
+                            </Box>
+                            <CloseButton onClick={onClose} />
+                        </Alert>
+                        {loginError && (
+                            <Button 
+                                ml={2} 
+                                size="sm" 
+                                colorScheme="red" 
+                                variant="outline"
+                                onClick={handleResetAuth}
                             >
-                                Register
-                            </Tab>
-                        </TabList>
-                        <TabPanels>
-                            {/* Login Panel */}
-                            <TabPanel p={0}>
-                                <VStack spacing={4} align="stretch">
-                                    <FormControl id="login-employee-id" isRequired>
-                                        <FormLabel>Employee ID</FormLabel>
+                                Reset Auth
+                            </Button>
+                        )}
+                    </Flex>
+                )}
+                
+                <Tabs 
+                    isFitted 
+                    variant="enclosed" 
+                    colorScheme="teal" 
+                    index={tabIndex} 
+                    onChange={setTabIndex}
+                    mb={4}
+                >
+                    <TabList mb="1em">
+                        <Tab 
+                            fontWeight="medium" 
+                            _selected={{ 
+                                color: primaryColor, 
+                                borderColor: borderColor,
+                                borderBottom: '2px solid',
+                                borderBottomColor: primaryColor
+                            }}
+                        >
+                            Login
+                        </Tab>
+                        <Tab 
+                            fontWeight="medium"
+                            _selected={{ 
+                                color: primaryColor, 
+                                borderColor: borderColor,
+                                borderBottom: '2px solid',
+                                borderBottomColor: primaryColor
+                            }}
+                        >
+                            Register
+                        </Tab>
+                    </TabList>
+                    <TabPanels>
+                        {/* Login Panel */}
+                        <TabPanel p={0}>
+                            <VStack spacing={4} align="stretch">
+                                <FormControl id="login-employee-id" isRequired>
+                                    <FormLabel>Employee ID</FormLabel>
+                                    <Input
+                                        type="text"
+                                        name="employee_id"
+                                        value={loginData.employee_id}
+                                        onChange={handleLoginChange}
+                                        placeholder="Enter your employee ID"
+                                        bg={inputBgColor}
+                                        borderColor={borderColor}
+                                    />
+                                </FormControl>
+                                <FormControl id="login-password" isRequired>
+                                    <FormLabel>Password</FormLabel>
+                                    <InputGroup>
                                         <Input
-                                            type="text"
-                                            name="employee_id"
-                                            value={loginData.employee_id}
+                                            type={showPassword ? 'text' : 'password'}
+                                            name="employee_password"
+                                            value={loginData.employee_password}
                                             onChange={handleLoginChange}
-                                            placeholder="Enter your employee ID"
+                                            placeholder="Enter your password"
                                             bg={inputBgColor}
                                             borderColor={borderColor}
                                         />
-                                    </FormControl>
-                                    <FormControl id="login-password" isRequired>
-                                        <FormLabel>Password</FormLabel>
-                                        <InputGroup>
-                                            <Input
-                                                type={showPassword ? 'text' : 'password'}
-                                                name="employee_password"
-                                                value={loginData.employee_password}
-                                                onChange={handleLoginChange}
-                                                placeholder="Enter your password"
-                                                bg={inputBgColor}
-                                                borderColor={borderColor}
-                                            />
-                                            <InputRightElement width="4.5rem">
-                                                <Button 
-                                                    h="1.75rem" 
-                                                    size="sm" 
-                                                    variant="ghost" 
-                                                    onClick={handlePasswordShow}
-                                                >
-                                                    {showPassword ? <ViewOffIcon /> : <ViewIcon />}
-                                                </Button>
-                                            </InputRightElement>
-                                        </InputGroup>
-                                    </FormControl>
-                                    <Checkbox 
-                                        colorScheme="teal" 
-                                        isChecked={rememberMe} 
-                                        onChange={(e) => setRememberMe(e.target.checked)}
-                                    >
-                                        Remember me
-                                    </Checkbox>
-                                    <Button
-                                        colorScheme="teal"
-                                        isLoading={loginLoading}
-                                        onClick={handleLoginSubmit}
-                                        mt={4}
-                                        size="lg"
-                                        w="100%"
-                                    >
-                                        Login
-                                    </Button>
-                                </VStack>
-                            </TabPanel>
+                                        <InputRightElement width="4.5rem">
+                                            <Button 
+                                                h="1.75rem" 
+                                                size="sm" 
+                                                variant="ghost" 
+                                                onClick={handlePasswordShow}
+                                            >
+                                                {showPassword ? <ViewOffIcon /> : <ViewIcon />}
+                                            </Button>
+                                        </InputRightElement>
+                                    </InputGroup>
+                                </FormControl>
+                                <Checkbox 
+                                    colorScheme="teal" 
+                                    isChecked={rememberMe} 
+                                    onChange={(e) => setRememberMe(e.target.checked)}
+                                >
+                                    Remember me
+                                </Checkbox>
+                                <Button
+                                    colorScheme="teal"
+                                    isLoading={loginLoading}
+                                    onClick={handleLoginSubmit}
+                                    mt={4}
+                                    size="lg"
+                                    w="100%"
+                                >
+                                    Login
+                                </Button>
+                            </VStack>
+                        </TabPanel>
 
-                            {/* Register Panel */}
-                            <TabPanel p={0}>
-                                <VStack spacing={4} align="stretch">
-                                    <FormControl id="register-employee-id" isRequired>
-                                        <FormLabel>Employee ID</FormLabel>
+                        {/* Register Panel */}
+                        <TabPanel p={0}>
+                            <VStack spacing={4} align="stretch">
+                                <FormControl id="register-employee-id" isRequired>
+                                    <FormLabel>Employee ID</FormLabel>
+                                    <Input
+                                        type="text"
+                                        name="employee_id"
+                                        value={registerData.employee_id}
+                                        onChange={handleRegisterChange}
+                                        placeholder="Enter your employee ID"
+                                        bg={inputBgColor}
+                                        borderColor={borderColor}
+                                    />
+                                </FormControl>
+                                <FormControl id="register-name" isRequired>
+                                    <FormLabel>Full Name</FormLabel>
+                                    <Input
+                                        type="text"
+                                        name="employee_name"
+                                        value={registerData.employee_name}
+                                        onChange={handleRegisterChange}
+                                        placeholder="Enter your full name"
+                                        bg={inputBgColor}
+                                        borderColor={borderColor}
+                                    />
+                                </FormControl>
+                                <Flex gap={4} direction={{ base: 'column', md: 'row' }}>
+                                    <FormControl id="register-designation" isRequired>
+                                        <FormLabel>Designation</FormLabel>
                                         <Input
                                             type="text"
-                                            name="employee_id"
-                                            value={registerData.employee_id}
+                                            name="employee_designation"
+                                            value={registerData.employee_designation}
                                             onChange={handleRegisterChange}
-                                            placeholder="Enter your employee ID"
+                                            placeholder="Enter your designation"
                                             bg={inputBgColor}
                                             borderColor={borderColor}
                                         />
                                     </FormControl>
-                                    <FormControl id="register-name" isRequired>
-                                        <FormLabel>Full Name</FormLabel>
+                                    <FormControl id="register-department" isRequired>
+                                        <FormLabel>Department</FormLabel>
                                         <Input
                                             type="text"
-                                            name="employee_name"
-                                            value={registerData.employee_name}
+                                            name="employee_department"
+                                            value={registerData.employee_department}
                                             onChange={handleRegisterChange}
-                                            placeholder="Enter your full name"
+                                            placeholder="Enter your department"
                                             bg={inputBgColor}
                                             borderColor={borderColor}
                                         />
                                     </FormControl>
-                                    <Flex gap={4} direction={{ base: 'column', md: 'row' }}>
-                                        <FormControl id="register-designation" isRequired>
-                                            <FormLabel>Designation</FormLabel>
-                                            <Input
-                                                type="text"
-                                                name="employee_designation"
-                                                value={registerData.employee_designation}
-                                                onChange={handleRegisterChange}
-                                                placeholder="Enter your designation"
-                                                bg={inputBgColor}
-                                                borderColor={borderColor}
-                                            />
-                                        </FormControl>
-                                        <FormControl id="register-department" isRequired>
-                                            <FormLabel>Department</FormLabel>
-                                            <Input
-                                                type="text"
-                                                name="employee_department"
-                                                value={registerData.employee_department}
-                                                onChange={handleRegisterChange}
-                                                placeholder="Enter your department"
-                                                bg={inputBgColor}
-                                                borderColor={borderColor}
-                                            />
-                                        </FormControl>
-                                    </Flex>
-                                    <FormControl id="register-location" isRequired>
-                                        <FormLabel>Location</FormLabel>
+                                </Flex>
+                                <FormControl id="register-location" isRequired>
+                                    <FormLabel>Location</FormLabel>
+                                    <Input
+                                        type="text"
+                                        name="employee_location"
+                                        value={registerData.employee_location}
+                                        onChange={handleRegisterChange}
+                                        placeholder="Enter your location"
+                                        bg={inputBgColor}
+                                        borderColor={borderColor}
+                                    />
+                                </FormControl>
+                                <FormControl id="register-email" isRequired>
+                                    <FormLabel>Email</FormLabel>
+                                    <Input
+                                        type="email"
+                                        name="employee_email"
+                                        value={registerData.employee_email}
+                                        onChange={handleRegisterChange}
+                                        placeholder="Enter your email"
+                                        bg={inputBgColor}
+                                        borderColor={borderColor}
+                                    />
+                                </FormControl>
+                                <FormControl id="register-password" isRequired>
+                                    <FormLabel>Password</FormLabel>
+                                    <InputGroup>
                                         <Input
-                                            type="text"
-                                            name="employee_location"
-                                            value={registerData.employee_location}
+                                            type={showPassword ? 'text' : 'password'}
+                                            name="employee_password"
+                                            value={registerData.employee_password}
                                             onChange={handleRegisterChange}
-                                            placeholder="Enter your location"
+                                            placeholder="Create a password"
                                             bg={inputBgColor}
                                             borderColor={borderColor}
                                         />
-                                    </FormControl>
-                                    <FormControl id="register-email" isRequired>
-                                        <FormLabel>Email</FormLabel>
-                                        <Input
-                                            type="email"
-                                            name="employee_email"
-                                            value={registerData.employee_email}
-                                            onChange={handleRegisterChange}
-                                            placeholder="Enter your email"
-                                            bg={inputBgColor}
-                                            borderColor={borderColor}
-                                        />
-                                    </FormControl>
-                                    <FormControl id="register-password" isRequired>
-                                        <FormLabel>Password</FormLabel>
-                                        <InputGroup>
-                                            <Input
-                                                type={showPassword ? 'text' : 'password'}
-                                                name="employee_password"
-                                                value={registerData.employee_password}
-                                                onChange={handleRegisterChange}
-                                                placeholder="Create a password"
-                                                bg={inputBgColor}
-                                                borderColor={borderColor}
-                                            />
-                                            <InputRightElement width="4.5rem">
-                                                <Button 
-                                                    h="1.75rem" 
-                                                    size="sm" 
-                                                    variant="ghost" 
-                                                    onClick={handlePasswordShow}
-                                                >
-                                                    {showPassword ? <ViewOffIcon /> : <ViewIcon />}
-                                                </Button>
-                                            </InputRightElement>
-                                        </InputGroup>
-                                    </FormControl>
-                                    <Button
-                                        colorScheme="teal"
-                                        isLoading={registerLoading}
-                                        onClick={handleRegisterSubmit}
-                                        mt={4}
-                                        size="lg"
-                                        w="100%"
-                                    >
-                                        Register
-                                    </Button>
-                                </VStack>
-                            </TabPanel>
-                        </TabPanels>
-                    </Tabs>
-                </Box>
+                                        <InputRightElement width="4.5rem">
+                                            <Button 
+                                                h="1.75rem" 
+                                                size="sm" 
+                                                variant="ghost" 
+                                                onClick={handlePasswordShow}
+                                            >
+                                                {showPassword ? <ViewOffIcon /> : <ViewIcon />}
+                                            </Button>
+                                        </InputRightElement>
+                                    </InputGroup>
+                                </FormControl>
+                                <Button
+                                    colorScheme="teal"
+                                    isLoading={registerLoading}
+                                    onClick={handleRegisterSubmit}
+                                    mt={4}
+                                    size="lg"
+                                    w="100%"
+                                >
+                                    Register
+                                </Button>
+                            </VStack>
+                        </TabPanel>
+                    </TabPanels>
+                </Tabs>
                 
                 {/* Add a "stuck" helper at the bottom when in loading state for a while */}
                 {loginLoading && (

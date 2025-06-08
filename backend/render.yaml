@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: thdc-cms-backend
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MONGODB_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: ADMIN_REGISTRATION_CODE
+        sync: false 

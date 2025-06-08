@@ -13,11 +13,29 @@ import complaintRoutes from './routes/complaintRoute';
 
 const app: Express = express();
 
+// Get allowed origins from environment or use defaults
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://thdc-3vyrr53u3-pulk17s-projects.vercel.app",
+  "https://thdc-3gvn5ln7y-pulk17s-projects.vercel.app",
+  "https://thdc-cms.vercel.app"
+];
+
 // Middleware
 app.use(express.json());
 app.use(cors({
-  origin: ["http://localhost:3000"],
-  methods: ["POST", "GET", "PUT", "DELETE"],
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
+      callback(null, true);
+    } else {
+      console.log("Blocked by CORS: ", origin);
+      callback(null, false);
+    }
+  },
+  methods: ["POST", "GET", "PUT", "DELETE", "OPTIONS"],
   credentials: true,
   exposedHeaders: ["set-cookie"]
 }));

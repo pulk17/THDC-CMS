@@ -1,6 +1,8 @@
 import app from './app';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
+import path from 'path';
+import fs from 'fs';
 
 // Handle uncaught exceptions
 process.on("uncaughtException", (err: Error) => {
@@ -10,7 +12,15 @@ process.on("uncaughtException", (err: Error) => {
 });
 
 // Config
-dotenv.config({ path: "config.env" });
+// Try to load config.env if it exists
+const configPath = path.resolve(__dirname, '../config.env');
+if (fs.existsSync(configPath)) {
+  console.log(`Loading config from ${configPath}`);
+  dotenv.config({ path: configPath });
+} else {
+  console.log('No config.env file found, using environment variables');
+  dotenv.config();
+}
 
 // Connect to database
 const connectDatabase = async (): Promise<void> => {
@@ -39,6 +49,7 @@ connectDatabase();
 const PORT = process.env.PORT || 6050;
 const server = app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
 });
 
 // Handle unhandled promise rejections

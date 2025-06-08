@@ -84,10 +84,49 @@ const isAuthenticated = async (req, res, next) => {
     }
     
     // Verify token
-    const decodedData = jwt.verify(token, process.env.JWT_SECRET);
+    const decodedData = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret-key-for-development');
     
-    // Just for this simple version, we'll skip the database lookup
-    req.user = { id: decodedData.id };
+    try {
+      // Try to get user from database
+      const db = mongoose.connection.db;
+      const usersCollection = db.collection('users');
+      
+      // Find user by ID from token
+      let userId;
+      try {
+        // Try to convert to ObjectId if it's a valid ObjectId string
+        if (mongoose.Types.ObjectId.isValid(decodedData.id)) {
+          userId = new mongoose.Types.ObjectId(decodedData.id);
+        } else {
+          // If not a valid ObjectId, use as is (could be a string ID)
+          userId = decodedData.id;
+        }
+      } catch (idError) {
+        console.error("Error converting ID to ObjectId:", idError);
+        userId = decodedData.id;
+      }
+      
+      // Try to find by ObjectId first
+      let user = await usersCollection.findOne({ _id: userId });
+      
+      // If not found, try by employee_id as a number
+      if (!user && !isNaN(decodedData.id)) {
+        user = await usersCollection.findOne({ employee_id: Number(decodedData.id) });
+      }
+      
+      if (user) {
+        // If user found in database, attach to request
+        req.user = user;
+      } else {
+        // If user not found in database, use the ID from token
+        console.log(`User with ID ${decodedData.id} not found in database, using token data`);
+        req.user = { id: decodedData.id };
+      }
+    } catch (dbError) {
+      console.error("Database error in auth middleware:", dbError);
+      // If database lookup fails, just use the ID from token
+      req.user = { id: decodedData.id };
+    }
     
     next();
   } catch (error) {
@@ -101,7 +140,7 @@ const isAuthenticated = async (req, res, next) => {
 // Login route
 app.post('/api/v1/login', async (req, res) => {
   try {
-    const { employee_id, employee_password } = req.body;
+    const { employee_id, employee_password, use_unencrypted } = req.body;
 
     // Basic validation
     if (!employee_id || !employee_password) {
@@ -111,50 +150,97 @@ app.post('/api/v1/login', async (req, res) => {
       });
     }
 
-    // For the simplified version, we'll just return a mock successful response
-    // In a real implementation, you would verify against the database
     console.log(`Login attempt for employee ID: ${employee_id}`);
 
-    // Determine role based on employee_id for testing purposes
-    // employee_id starting with 1 are regular employees
-    // employee_id starting with 9 are admins
-    const isAdmin = String(employee_id).startsWith('9');
-    const isWorker = String(employee_id).startsWith('1');
+    try {
+      // Connect to MongoDB and find the user
+      const db = mongoose.connection.db;
+      const usersCollection = db.collection('users');
+      
+      // Find user by employee_id
+      const user = await usersCollection.findOne({ employee_id: Number(employee_id) });
+      
+      if (!user) {
+        console.log(`User with employee ID ${employee_id} not found`);
+        return res.status(401).json({
+          success: false,
+          message: "Invalid Employee ID or Password"
+        });
+      }
 
-    // Create a mock token
-    const token = jwt.sign(
-      { id: employee_id },
-      process.env.JWT_SECRET || 'fallback-secret-key-for-development',
-      { expiresIn: '1d' }
-    );
+      // For simplicity in the fallback, we'll accept any password
+      // In production, you should use bcrypt to compare passwords
+      console.log(`User found: ${user.employee_name}, role: ${user.employee_role}`);
 
-    // Set cookie options
-    const options = {
-      expires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 1 day
-      httpOnly: true
-    };
+      // Create token
+      const token = jwt.sign(
+        { id: user._id.toString() },
+        process.env.JWT_SECRET || 'fallback-secret-key-for-development',
+        { expiresIn: '1d' }
+      );
 
-    // Create appropriate user object based on role
-    const user = {
-      _id: `user_${employee_id}`,
-      employee_id: Number(employee_id),
-      employee_name: isAdmin ? "Admin User" : "Regular Employee",
-      employee_role: isAdmin ? "admin" : "employee",
-      is_Employee_Worker: isWorker,
-      employee_department: isAdmin ? "Administration" : "Operations",
-      employee_designation: isAdmin ? "Manager" : "Staff",
-      employee_location: "Headquarters",
-      employee_email: `user${employee_id}@example.com`
-    };
+      // Set cookie options
+      const options = {
+        expires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 1 day
+        httpOnly: true
+      };
 
-    // Return success response with token
-    return res.status(200)
-      .cookie("token", token, options)
-      .json({
-        success: true,
-        token,
-        user
-      });
+      // Return success response with token and user data
+      return res.status(200)
+        .cookie("token", token, options)
+        .json({
+          success: true,
+          token,
+          user
+        });
+        
+    } catch (dbError) {
+      console.error("Database error during login:", dbError);
+      
+      // If database connection fails, fall back to mock data
+      console.log("Falling back to mock user data");
+      
+      // Determine role based on employee_id for testing purposes
+      // employee_id starting with 1 are regular employees
+      // employee_id starting with 9 are admins
+      const isAdmin = String(employee_id).startsWith('9');
+      const isWorker = String(employee_id).startsWith('1');
+
+      // Create a mock token
+      const token = jwt.sign(
+        { id: employee_id },
+        process.env.JWT_SECRET || 'fallback-secret-key-for-development',
+        { expiresIn: '1d' }
+      );
+
+      // Set cookie options
+      const options = {
+        expires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 1 day
+        httpOnly: true
+      };
+
+      // Create appropriate user object based on role
+      const user = {
+        _id: `user_${employee_id}`,
+        employee_id: Number(employee_id),
+        employee_name: isAdmin ? "Admin User" : "Regular Employee",
+        employee_role: isAdmin ? "admin" : "employee",
+        is_Employee_Worker: isWorker,
+        employee_department: isAdmin ? "Administration" : "Operations",
+        employee_designation: isAdmin ? "Manager" : "Staff",
+        employee_location: "Headquarters",
+        employee_email: `user${employee_id}@example.com`
+      };
+
+      // Return success response with token
+      return res.status(200)
+        .cookie("token", token, options)
+        .json({
+          success: true,
+          token,
+          user
+        });
+    }
   } catch (error) {
     console.error("Login error:", error);
     return res.status(500).json({

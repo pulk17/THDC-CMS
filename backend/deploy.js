@@ -785,6 +785,187 @@ app.get('/api/v1/logout', (req, res) => {
   });
 });
 
+// Update user endpoint
+app.put('/api/v1/admin/updateUser', isAuthenticated, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (!req.user.employee_role || req.user.employee_role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. Admin privileges required."
+      });
+    }
+    
+    const { 
+      userId, 
+      employee_name, 
+      employee_designation, 
+      employee_department, 
+      employee_location,
+      is_Employee_Worker 
+    } = req.body;
+    
+    // Basic validation
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide user ID"
+      });
+    }
+    
+    try {
+      // Try to update user in database
+      const db = mongoose.connection.db;
+      const usersCollection = db.collection('users');
+      
+      // Convert userId to ObjectId if it's a valid ObjectId string
+      let userObjectId;
+      try {
+        if (mongoose.Types.ObjectId.isValid(userId)) {
+          userObjectId = new mongoose.Types.ObjectId(userId);
+        } else {
+          userObjectId = userId;
+        }
+      } catch (idError) {
+        console.error("Error converting ID to ObjectId:", idError);
+        userObjectId = userId;
+      }
+      
+      // Create update object with only provided fields
+      const updateData = {};
+      if (employee_name) updateData.employee_name = employee_name;
+      if (employee_designation) updateData.employee_designation = employee_designation;
+      if (employee_department) updateData.employee_department = employee_department;
+      if (employee_location) updateData.employee_location = employee_location;
+      if (is_Employee_Worker !== undefined) updateData.is_Employee_Worker = is_Employee_Worker;
+      
+      // Update user
+      const result = await usersCollection.updateOne(
+        { _id: userObjectId },
+        { $set: updateData }
+      );
+      
+      if (result.matchedCount === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found"
+        });
+      }
+      
+      return res.status(200).json({
+        success: true,
+        message: "User updated successfully"
+      });
+    } catch (dbError) {
+      console.error("Database error updating user:", dbError);
+      return res.status(500).json({
+        success: false,
+        message: "Database error updating user"
+      });
+    }
+  } catch (error) {
+    console.error("Error updating user:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    });
+  }
+});
+
+// Admin registration endpoint
+app.post('/api/v1/admin/register', isAuthenticated, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (!req.user.employee_role || req.user.employee_role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. Admin privileges required."
+      });
+    }
+    
+    const { 
+      employee_id, 
+      employee_name, 
+      employee_email, 
+      employee_department, 
+      employee_designation, 
+      employee_location, 
+      employee_password,
+      admin_registration_code
+    } = req.body;
+    
+    // Basic validation
+    if (!employee_id || !employee_name || !employee_password || !employee_email || !admin_registration_code) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide all required fields"
+      });
+    }
+    
+    // Check admin registration code
+    const correctCode = process.env.ADMIN_REGISTRATION_CODE || 'add_admin';
+    if (admin_registration_code !== correctCode) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid admin registration code"
+      });
+    }
+    
+    try {
+      // Try to add admin to database
+      const db = mongoose.connection.db;
+      const usersCollection = db.collection('users');
+      
+      // Check if employee_id already exists
+      const existingUser = await usersCollection.findOne({ employee_id: Number(employee_id) });
+      if (existingUser) {
+        return res.status(400).json({
+          success: false,
+          message: "Employee ID already exists"
+        });
+      }
+      
+      // Create new admin user
+      const newAdmin = {
+        employee_id: Number(employee_id),
+        employee_name,
+        employee_email,
+        employee_department,
+        employee_designation,
+        employee_location,
+        employee_password, // In a real app, you would hash this password
+        employee_role: 'admin',
+        is_Employee_Worker: false,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      
+      const result = await usersCollection.insertOne(newAdmin);
+      
+      return res.status(201).json({
+        success: true,
+        message: "Admin registered successfully",
+        user: {
+          ...newAdmin,
+          _id: result.insertedId
+        }
+      });
+    } catch (dbError) {
+      console.error("Database error registering admin:", dbError);
+      return res.status(500).json({
+        success: false,
+        message: "Database error registering admin"
+      });
+    }
+  } catch (error) {
+    console.error("Error registering admin:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    });
+  }
+});
+
 // Connect to database
 const connectDatabase = async () => {
   try {

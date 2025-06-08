@@ -90,7 +90,7 @@ const AdminManagement: React.FC = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const { data } = await api.get('/api/v1/admin/getAllUsers');
+      const { data } = await api.get('/admin/getAllUsers');
       setUsers(data.users);
       setLoading(false);
     } catch (error: any) {
@@ -165,7 +165,7 @@ const AdminManagement: React.FC = () => {
         admin_registration_code: '[HIDDEN]' // Don't log the secret code
       });
       
-      const response = await api.post('/api/v1/admin/register', newAdmin);
+      const response = await api.post('/admin/register', newAdmin);
       console.log('Admin registration response:', response.data);
       
       toast({
@@ -213,7 +213,7 @@ const AdminManagement: React.FC = () => {
     
     try {
       setLoading(true);
-      await api.delete(`/api/v1/admin/deleteUser/${userToDelete._id}`);
+      await api.delete(`/admin/deleteUser/${userToDelete._id}`);
       
       toast({
         title: 'Success',

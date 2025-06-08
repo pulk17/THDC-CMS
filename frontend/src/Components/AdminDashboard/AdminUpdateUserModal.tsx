@@ -82,7 +82,7 @@ const AdminUpdateUserModal: React.FC<AdminUpdateUserModalProps> = ({
     try {
       setLoading(true);
       
-      await api.put('/api/v1/admin/updateUser', {
+      await api.put('/admin/updateUser', {
         userId: user._id,
         ...formData
       });

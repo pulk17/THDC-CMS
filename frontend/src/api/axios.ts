@@ -17,8 +17,43 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
   withCredentials: true, // Important for cookies/authentication
-  timeout: 30000, // Increase timeout to 30 seconds to account for cold starts on Render's free tier
+  timeout: 60000, // Increase timeout to 60 seconds to account for cold starts on Render's free tier
 });
+
+// Track retry attempts for each request
+const retryMap = new Map();
+
+// Function to handle retries
+const retryRequest = async (error: any, maxRetries = 2) => {
+  const config = error.config;
+  
+  // Create a unique key for this request
+  const requestKey = `${config.method}-${config.url}`;
+  
+  // Get current retry count or initialize to 0
+  const retryCount = retryMap.get(requestKey) || 0;
+  
+  // Check if we should retry
+  if (retryCount < maxRetries && (!error.response || error.response.status >= 500 || error.code === 'ECONNABORTED')) {
+    retryMap.set(requestKey, retryCount + 1);
+    
+    // Exponential backoff delay: 1s, 2s, 4s, etc.
+    const delay = Math.pow(2, retryCount) * 1000;
+    console.log(`[API] Retrying request (${retryCount + 1}/${maxRetries}) after ${delay}ms delay...`);
+    
+    // Wait before retrying
+    await new Promise(resolve => setTimeout(resolve, delay));
+    
+    // Retry the request
+    return api(config);
+  }
+  
+  // Clear retry count
+  retryMap.delete(requestKey);
+  
+  // If we've exhausted retries or shouldn't retry, reject with the original error
+  return Promise.reject(error);
+};
 
 // Add a request interceptor
 api.interceptors.request.use(
@@ -56,75 +91,116 @@ api.interceptors.request.use(
 // Add a response interceptor
 api.interceptors.response.use(
   (response) => {
+    // Clear retry count on success
+    const requestKey = `${response.config.method}-${response.config.url}`;
+    retryMap.delete(requestKey);
+    
     // Only log success for non-GET requests to reduce noise
     if (response.config.method !== 'get') {
       console.log(`[API Success] ${response.status} ${response.config.url}`);
     }
     return response;
   },
-  (error) => {
-    // Check for network errors which could indicate cold starts
-    if (!error.response) {
-      console.error(`[API Network Error] ${error.config?.url || 'unknown URL'}: ${error.message}`);
+  async (error: any) => {
+    // First try to retry the request if applicable
+    try {
+      return await retryRequest(error);
+    } catch (retryErr) {
+      // If retry fails, continue with normal error handling
+      const retryError: any = retryErr;
       
-      // Check if this might be a cold start issue
-      if (error.message.includes('timeout') || error.message.includes('Network Error')) {
-        console.log('[API] Possible cold start detected. The backend might be starting up.');
-      }
-      
-      return Promise.reject(error);
-    }
-    
-    // Error response - simplify error logging
-    const status = error.response.status;
-    console.error(`[API Error] ${status} ${error.config?.url || 'unknown URL'}: ${error.message}`);
-    
-    // Handle 401 Unauthorized errors
-    if (status === 401) {
-      // Don't clear token or redirect if we're already on the login page
-      if (window.location.pathname !== '/') {
-        console.log('[API] Authentication failed - redirecting to login');
+      // Check for network errors which could indicate cold starts
+      if (!retryError.response) {
+        console.error(`[API Network Error] ${retryError.config?.url || 'unknown URL'}: ${retryError.message}`);
         
-        // Clear all auth-related storage
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('rememberedUser');
-        
-        // Add a small notification to the user
-        if (document.getElementById('auth-redirect-notification') === null) {
-          const notification = document.createElement('div');
-          notification.id = 'auth-redirect-notification';
-          notification.style.position = 'fixed';
-          notification.style.top = '20px';
-          notification.style.left = '50%';
-          notification.style.transform = 'translateX(-50%)';
-          notification.style.backgroundColor = '#285E61'; // teal color
-          notification.style.color = 'white';
-          notification.style.padding = '10px 20px';
-          notification.style.borderRadius = '4px';
-          notification.style.zIndex = '9999';
-          notification.innerText = 'Authentication error. Redirecting to login...';
+        // Check if this might be a cold start issue
+        if (retryError.message.includes('timeout') || retryError.message.includes('Network Error')) {
+          console.log('[API] Possible cold start detected. The backend might be starting up.');
           
-          document.body.appendChild(notification);
-          
-          // Set a failsafe redirect flag in sessionStorage
-          sessionStorage.setItem('auth_redirect_timestamp', Date.now().toString());
-          
-          setTimeout(() => {
-            // Manual redirect to avoid loops - with a small delay to show notification
-            window.location.href = '/';
-          }, 2000);
-        } else {
-          // If notification exists, just redirect
-          window.location.href = '/';
+          // Show a user-friendly message for timeouts
+          if (retryError.message.includes('timeout') && typeof window !== 'undefined') {
+            const notificationId = 'cold-start-notification';
+            if (!document.getElementById(notificationId)) {
+              const notification = document.createElement('div');
+              notification.id = notificationId;
+              notification.style.position = 'fixed';
+              notification.style.top = '20px';
+              notification.style.left = '50%';
+              notification.style.transform = 'translateX(-50%)';
+              notification.style.backgroundColor = '#3182CE'; // blue color
+              notification.style.color = 'white';
+              notification.style.padding = '10px 20px';
+              notification.style.borderRadius = '4px';
+              notification.style.zIndex = '9999';
+              notification.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
+              notification.innerText = 'Server is starting up. This may take up to 60 seconds...';
+              
+              document.body.appendChild(notification);
+              
+              // Remove after 10 seconds
+              setTimeout(() => {
+                if (document.getElementById(notificationId)) {
+                  document.body.removeChild(notification);
+                }
+              }, 10000);
+            }
+          }
         }
+        
+        return Promise.reject(retryError);
       }
-    } else if (status === 404 && error.config?.url?.includes('/login')) {
-      // Special handling for login 404 errors which might indicate wrong API URL
-      console.error('[API URL Error] Login endpoint not found. Check if API_BASE_URL is correct:', API_URL_WITH_PREFIX);
-      console.log('Attempting direct request to:', `${API_BASE_URL}/api/v1/login`);
+      
+      // Error response - simplify error logging
+      const status = retryError.response.status;
+      console.error(`[API Error] ${status} ${retryError.config?.url || 'unknown URL'}: ${retryError.message}`);
+      
+      // Handle 401 Unauthorized errors
+      if (status === 401) {
+        // Don't clear token or redirect if we're already on the login page
+        if (window.location.pathname !== '/') {
+          console.log('[API] Authentication failed - redirecting to login');
+          
+          // Clear all auth-related storage
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('rememberedUser');
+          
+          // Add a small notification to the user
+          if (document.getElementById('auth-redirect-notification') === null) {
+            const notification = document.createElement('div');
+            notification.id = 'auth-redirect-notification';
+            notification.style.position = 'fixed';
+            notification.style.top = '20px';
+            notification.style.left = '50%';
+            notification.style.transform = 'translateX(-50%)';
+            notification.style.backgroundColor = '#285E61'; // teal color
+            notification.style.color = 'white';
+            notification.style.padding = '10px 20px';
+            notification.style.borderRadius = '4px';
+            notification.style.zIndex = '9999';
+            notification.innerText = 'Authentication error. Redirecting to login...';
+            
+            document.body.appendChild(notification);
+            
+            // Set a failsafe redirect flag in sessionStorage
+            sessionStorage.setItem('auth_redirect_timestamp', Date.now().toString());
+            
+            setTimeout(() => {
+              // Manual redirect to avoid loops - with a small delay to show notification
+              window.location.href = '/';
+            }, 2000);
+          } else {
+            // If notification exists, just redirect
+            window.location.href = '/';
+          }
+        }
+      } else if (status === 404 && retryError.config?.url?.includes('/login')) {
+        // Special handling for login 404 errors which might indicate wrong API URL
+        console.error('[API URL Error] Login endpoint not found. Check if API_BASE_URL is correct:', API_URL_WITH_PREFIX);
+        console.log('Attempting direct request to:', `${API_BASE_URL}/api/v1/login`);
+      }
+      
+      return Promise.reject(retryError);
     }
-    
-    return Promise.reject(error);
   }
 );
 

@@ -303,7 +303,13 @@ const Auth: React.FC = () => {
 
     const handleRedirectToDashboard = () => {
         if (user) {
-            navigate(user.employee_role === 'admin' ? '/admin' : '/employee');
+            if (user.employee_role === 'admin') {
+                navigate('/admin');
+            } else if (user.is_Employee_Worker) {
+                navigate('/worker');
+            } else {
+                navigate('/employee');
+            }
         } else {
             toast({
                 title: 'No user data available',
@@ -330,7 +336,13 @@ const Auth: React.FC = () => {
             // We'll let the API interceptor handle token validation on the next API call
             if (user) {
                 console.log("Auth: User data available, redirecting to appropriate dashboard");
-                navigate(user.employee_role === 'admin' ? '/admin' : '/employee');
+                if (user.employee_role === 'admin') {
+                    navigate('/admin');
+                } else if (user.is_Employee_Worker) {
+                    navigate('/worker');
+                } else {
+                    navigate('/employee');
+                }
             }
         } else {
             console.log("Auth: No token found, staying on login page");
@@ -374,7 +386,13 @@ const Auth: React.FC = () => {
             
             // Add a small delay before redirecting to ensure token is saved
             setTimeout(() => {
-                navigate(user.employee_role === 'admin' ? '/admin' : '/employee');
+                if (user.employee_role === 'admin') {
+                    navigate('/admin');
+                } else if (user.is_Employee_Worker) {
+                    navigate('/worker');
+                } else {
+                    navigate('/employee');
+                }
             }, 100);
         }
     }, [isLoggedIn, user, hasShownLoginToast, navigate, toast]);

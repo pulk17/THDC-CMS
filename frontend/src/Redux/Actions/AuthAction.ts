@@ -71,6 +71,8 @@ export const loginUser = (
             if (data.user.employee_role === "admin") {
                 dispatch(getAllEmployeeComplaints());
                 dispatch(getAllWorkersList());
+            } else if (data.user.is_Employee_Worker) {
+                dispatch(findArrivedComplaints());
             } else {
                 dispatch(getAllMyComplaints());
                 dispatch(findArrivedComplaints());
@@ -123,6 +125,8 @@ export const loginUser = (
                         if (data.user.employee_role === "admin") {
                             dispatch(getAllEmployeeComplaints());
                             dispatch(getAllWorkersList());
+                        } else if (data.user.is_Employee_Worker) {
+                            dispatch(findArrivedComplaints());
                         } else {
                             dispatch(getAllMyComplaints());
                             dispatch(findArrivedComplaints());
@@ -176,6 +180,8 @@ export const loginUser = (
                 if (data.user.employee_role === "admin") {
                     dispatch(getAllEmployeeComplaints());
                     dispatch(getAllWorkersList());
+                } else if (data.user.is_Employee_Worker) {
+                    dispatch(findArrivedComplaints());
                 } else {
                     dispatch(getAllMyComplaints());
                     dispatch(findArrivedComplaints());

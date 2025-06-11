@@ -1,4 +1,4 @@
-# THDC Complaint Management System
+# THDC Complaint Management System   
 
 A comprehensive complaint management system for THDC (Tehri Hydro Development Corporation) that allows users to register complaints, employees to manage and assign complaints to workers, and administrators to oversee the entire process.
 
@@ -194,9 +194,10 @@ For detailed information about each part:
 - [Frontend Documentation](./frontend/README.md)
 - [Backend Documentation](./backend/README.md)
 
-## Contributing
+## Contributers
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Pulkit Chauhan - Lead Developer
+Aakarsh Panwar - Backend Specialist
 
 ## License
 
